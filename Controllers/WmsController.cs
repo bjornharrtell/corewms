@@ -22,7 +22,7 @@ namespace CoreWms.Controllers
         }
 
         [HttpGet]
-        public async Task Get(string service, string version, string request, string layers, string styles, string crs, string bbox, int width, int height, string format, bool? transparent)
+        public async Task Get(string service, string? version, string request, string? layers, string? styles, string? crs, string? bbox, int? width, int? height, string? format, bool? transparent)
         {
             logger.LogTrace("Recieved GET request");
             if (request == "GetCapabilities")
@@ -37,10 +37,18 @@ namespace CoreWms.Controllers
                 layers ??= "";
                 styles ??= "";
                 crs ??= "";
+                version ??= "1.3.0";
+                if (bbox == null)
+                    throw new Exception("Query string parameter bbox is required");
+                if (width == null)
+                    throw new Exception("Query string parameter width is required");
+                if (height == null)
+                    throw new Exception("Query string parameter height is required");
+                format ??= "image/png";
                 Response.StatusCode = 200;
                 Response.Headers.Add(HeaderNames.ContentType, "image/png");
-                getMap.Parse(service, version, request, layers, styles, crs, bbox, width, height, format, transparent.GetValueOrDefault());
-                await getMap.StreamResponseAsync(Response.Body);
+                var parameters = getMap.ParseQueryStringParams(service, version, request, layers, styles, crs, bbox, width.Value, height.Value, format, transparent.GetValueOrDefault());
+                await getMap.StreamResponseAsync(parameters, Response.Body);
                 await Response.Body.FlushAsync();
             }
             else

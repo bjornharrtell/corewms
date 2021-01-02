@@ -1,3 +1,4 @@
+#nullable disable
 namespace CoreWms.Config
 {
     public class DataSource

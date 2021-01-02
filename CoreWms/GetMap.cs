@@ -9,17 +9,13 @@ using SkiaSharp;
 
 namespace CoreWms
 {
-
     public enum Format
     {
         Png
     }
 
-    public class GetMap : Request
+    public struct GetMapParameters
     {
-        private readonly ILogger<GetMap> logger;
-        private readonly IContext context;
-
         public string[] Layers { get; set; }
         public string[] Styles { get; set; }
 
@@ -32,7 +28,13 @@ namespace CoreWms
 
         public Format Format { get; set; }
 
-        bool Transparent { get; set; }
+        public bool Transparent { get; set; }
+    }
+
+    public class GetMap : Request
+    {
+        private readonly ILogger<GetMap> logger;
+        private readonly IContext context;
 
         public GetMap(ILogger<GetMap> logger, IContext context)
         {
@@ -40,7 +42,7 @@ namespace CoreWms
             this.context = context;
         }
 
-        public void Parse(
+        public GetMapParameters ParseQueryStringParams(
             string service,
             string version,
             string request,
@@ -55,20 +57,20 @@ namespace CoreWms
         {
             base.Parse(service, version, request);
 
-            Layers = layers.Split(",");
-            Styles = styles.Split(",");
-
-            Crs = crs;
-
             var bboxParts = bbox.Split(",").Select(p => float.Parse(p)).ToArray();
-            Bbox = new Envelope(bboxParts[0], bboxParts[2], bboxParts[1], bboxParts[3]);
 
-            Width = width;
-            Height = height;
+            var parameters = new GetMapParameters() {
+                Layers = layers.Split(","),
+                Styles = styles.Split(","),
+                Crs = crs,
+                Bbox = new Envelope(bboxParts[0], bboxParts[2], bboxParts[1], bboxParts[3]),
+                Width = width,
+                Height = height,
+                Format = ParseFormat(format),
+                Transparent = transparent
+            };
 
-            Format = ParseFormat(format);
-
-            Transparent = transparent;
+            return parameters;
         }
 
         private Format ParseFormat(string format)
@@ -78,10 +80,10 @@ namespace CoreWms
             throw new Exception($"Format {format} is not supported");
         }
 
-        public async Task StreamResponseAsync(Stream stream)
+        public async Task StreamResponseAsync(GetMapParameters parameters, Stream stream)
         {
-            var renderers = Layers
-                .Select(l => ProcessLayer(l));
+            var renderers = parameters.Layers
+                .Select(l => ProcessLayer(parameters, l));
 
             var stopwatch = Stopwatch.StartNew();
             var renders = await Task.WhenAll(renderers);
@@ -89,21 +91,19 @@ namespace CoreWms
             stopwatch = Stopwatch.StartNew();
             if (renders.Length == 1)
                 renders[0].Bitmap.Encode(stream, SKEncodedImageFormat.Png, 100);
-            logger.LogTrace($"Encoded {Format} ({stopwatch.ElapsedMilliseconds} ms)");
+            logger.LogTrace($"Encoded {parameters.Format} ({stopwatch.ElapsedMilliseconds} ms)");
             // TODO: else blend into single bitmap and encode
         }
 
-        async Task<LayerRenderer> ProcessLayer(string layer)
+        async Task<LayerRenderer> ProcessLayer(GetMapParameters parameters, string layer)
         {
-            context.Layers.TryGetValue(layer, out Layer serverLayer);
-
-            if (serverLayer == null)
+            if (!context.Layers.TryGetValue(layer, out Layer? serverLayer))
                 throw new Exception($"Layer {layer} not available");
 
-            var renderer = new LayerRenderer(Width, Height, Bbox);
+            var renderer = new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox);
 
             var stopwatch = Stopwatch.StartNew();
-            await foreach (var f in serverLayer.DataSource.FetchAsync(Bbox, renderer.Tolerance))
+            await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, renderer.Tolerance))
                 renderer.Draw(serverLayer, f);
             logger.LogTrace($"Rendered layer {layer} ({stopwatch.ElapsedMilliseconds} ms)");
 

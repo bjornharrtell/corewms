@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
@@ -107,8 +108,9 @@ namespace CoreWms
 
         public void Draw(MultiPolygon mp)
         {
-            foreach (var p in mp.Geometries)
-                Draw(p as Polygon);
+            foreach (var g in mp.Geometries)
+                if (g is Polygon p)
+                    Draw(p);
         }
 
         public void Draw(LineString ls, SKPath path)
@@ -124,8 +126,9 @@ namespace CoreWms
         public void Draw(MultiLineString mls)
         {
             var path = new SKPath();
-            foreach (var ls in mls.Geometries)
-                Draw(ls as LineString, path);
+            foreach (var g in mls.Geometries)
+                if (g is LineString ls)
+                    Draw(ls, path);
             Draw(path);
         }
 

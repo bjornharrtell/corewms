@@ -12,7 +12,7 @@ namespace CoreWms {
         private readonly ILogger<GetCapabilities> logger;
         private readonly IContext context;
 
-        private static string capabilitiesCache;
+        private static string? capabilitiesCache;
 
         public GetCapabilities(ILogger<GetCapabilities> logger, IContext context)
         {

@@ -45,7 +45,7 @@ namespace CoreWms
             catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException)
             {
                 logger.LogWarning($"Style for layer {name} not found falling back to default");
-                return default;
+                return new List<Rule>();
             }
         }
 

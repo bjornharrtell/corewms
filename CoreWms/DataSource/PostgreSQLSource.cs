@@ -58,6 +58,8 @@ namespace CoreWms.DataSource
             conn.Open();
             using var cmd = new NpgsqlCommand(sql, conn);
             var polygon = cmd.ExecuteScalar() as Polygon;
+            if (polygon == null)
+                throw new Exception("Unexpected failure determining layer extent");
             return polygon.EnvelopeInternal;
         }
 
@@ -107,10 +109,10 @@ namespace CoreWms.DataSource
         private async Task<IFeature> ReadFeature(NpgsqlBinaryExporter reader)
         {
             var geometry = pgreader.Read(await reader.ReadAsync<byte[]>());
-            AttributesTable attributes = null;
             if (extraColumnsSet.Count > 0)
-                attributes = await ReadAttributes(reader);
-            return new Feature(geometry, attributes);
+                return new Feature(geometry, await ReadAttributes(reader));
+            else
+                return new Feature(geometry, null);
         }
 
         private async Task<AttributesTable> ReadAttributes(NpgsqlBinaryExporter reader)

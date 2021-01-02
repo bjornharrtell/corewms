@@ -31,11 +31,12 @@ namespace CoreWms {
 
         static public StyledLayerDescriptor FromStream(Stream stream)  {
             var serializer = new XmlSerializer(typeof(StyledLayerDescriptor));
-            var sld = serializer.Deserialize(stream) as StyledLayerDescriptor;
+            if (!(serializer.Deserialize(stream) is StyledLayerDescriptor sld))
+                throw new System.Exception("Unexpected error deserializing SLD document");
             return sld;
         }
 
-        static SKPaint ToPaint(Ogc.Se.Fill fill)
+        static SKPaint? ToPaint(Ogc.Se.Fill fill)
         {
             if (fill.GraphicFill != null)
             {
@@ -44,7 +45,7 @@ namespace CoreWms {
                 var mark = graphic.Mark.First();
                 var strokeColor = mark.Stroke.SvgParameter.First(p => p.name == "stroke").Text;
                 var strokeWidth = float.Parse(mark.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text);
-                SKPathEffect pathEffect = null;
+                SKPathEffect? pathEffect = null;
                 if (mark.WellKnownName == "shape://backslash")
                     pathEffect = CreateDiagLines(strokeWidth, size);
                 return new SKPaint() {
