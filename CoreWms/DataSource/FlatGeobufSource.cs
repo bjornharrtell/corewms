@@ -26,30 +26,18 @@ namespace CoreWms.DataSource
         public Envelope GetExtent()
         {
             using var stream = File.OpenRead(filePath);
-            // TODO: would be nice if it was part of FlatGeobuf API
-            var reader = new BinaryReader(stream);
-            var magicBytes = reader.ReadBytes(8);
-            if (!magicBytes.SequenceEqual(Constants.MagicBytes))
-                throw new Exception("Not a FlatGeobuf file");
-            var headerSize = reader.ReadInt32();
-            var header = Header.GetRootAsHeader(new ByteBuffer(reader.ReadBytes(headerSize)));
-            var e = new Envelope(header.Envelope(0), header.Envelope(2), header.Envelope(1), header.Envelope(3));
+            var header = Helpers.ReadHeader(stream);
+            var e = Helpers.GetEnvelope(header);
             return e;
         }
 
         public int GetEPSGCode()
         {
             using var stream = File.OpenRead(filePath);
-            // TODO: would be nice if it was part of FlatGeobuf API
-            var reader = new BinaryReader(stream);
-            var magicBytes = reader.ReadBytes(8);
-            if (!magicBytes.SequenceEqual(Constants.MagicBytes))
-                throw new Exception("Not a FlatGeobuf file");
-            var headerSize = reader.ReadInt32();
-            var header = Header.GetRootAsHeader(new ByteBuffer(reader.ReadBytes(headerSize)));
-            return header.Crs?.Code ?? 6501;
+            var header = Helpers.ReadHeader(stream);
+            var code = Helpers.GetCrsCode(header);
+            return code == 0 ? 6501 : code;
         }
-
 
         public async IAsyncEnumerable<IFeature> FetchAsync(Envelope e, double tolerance = 0)
         {
