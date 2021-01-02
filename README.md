@@ -27,4 +27,4 @@ CoreWms should now be runnable out of the box with `dotnet run`.
 
 http://localhost:5000/wms?service=WMS&request=GetCapabilities
 
-http://localhost:5000/wms?service=WMS&request=GetMap&layers=tiger_roads&styles=&crs=&bbox=-74.1,40.7,-73.9,40.9&width=500&height=500&format=image/png
+http://localhost:5000/wms?service=WMS&request=GetMap&layers=countries&styles=&crs=&bbox=-180,-90,180,90&width=500&height=500&format=image/png
