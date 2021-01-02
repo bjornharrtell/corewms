@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using FlatBuffers;
 using FlatGeobuf;
 using FlatGeobuf.NTS;
 using Microsoft.Extensions.Logging;
@@ -14,9 +11,6 @@ namespace CoreWms.DataSource
 {
     public class FlatGeobufSource : IDataSource {
         readonly string filePath;
-
-        public static byte[] MagicBytes = new byte[] {
-            0x66, 0x67, 0x62, 0x03, 0x66, 0x67, 0x62, 0x00 };
 
         public FlatGeobufSource(ILogger logger, Config.DataSource dataSource, Layer layer)
         {
