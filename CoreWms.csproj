@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FlatGeobuf" Version="3.8.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
     <PackageReference Include="NetTopologySuite" Version="2.1.0" />
     <PackageReference Include="NetTopologySuite.Features" Version="2.1.0" />
@@ -12,10 +13,6 @@
     <PackageReference Include="Npgsql.NetTopologySuite" Version="5.0.1.1" />
     <PackageReference Include="SkiaSharp" Version="2.80.2" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.80.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="../flatgeobuf/src/net/FlatGeobuf/FlatGeobuf.csproj" />
   </ItemGroup>
 
 </Project>

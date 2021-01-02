@@ -13,15 +13,11 @@ Supports PostgreSQL and FlatGeobuf as data sources and SLD 1.1 as styling langua
 * [ ] Complete symbolizer support
 * [ ] SLD 1.0 support
 
-## How to build
-
-Currently depends on having a recent clone of https://github.com/flatgeobuf/flatgeobuf at `../flatgeobuf`.
-
 ## How to run
 
 Get some test data with `wget http://flatgeobuf.org/test/data/countries.fgb`.
 
-CoreWms should now be runnable out of the box with `dotnet run`.
+Should now be runnable out of the box with `dotnet run`.
 
 ## Example requests
 
