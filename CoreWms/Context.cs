@@ -32,7 +32,7 @@ namespace CoreWms
                 .ToDictionary(l => l.Name);
         }
 
-        IList<Rule> CreateRules(string name)
+        Rule[] CreateRules(string name)
         {
             var filePath = Path.Join("sld", name) + ".sld";
             try
@@ -45,7 +45,7 @@ namespace CoreWms
             catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException)
             {
                 logger.LogWarning($"Style for layer {name} not found falling back to default");
-                return new List<Rule>();
+                return new Rule[] {};
             }
         }
 

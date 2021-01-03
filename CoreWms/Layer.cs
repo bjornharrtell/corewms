@@ -1,32 +1,37 @@
 #nullable disable
 using System;
-using System.Collections.Generic;
 using CoreWms.DataSource;
 using SkiaSharp;
 
+// TODO: make readonly in .NET 5
+
 namespace CoreWms {
 
-    public class EqualsTo
+    public struct EqualsTo
     {
-        public string PropertyName { get; set; }
-        public object Literal { get; set; }
+        public string PropertyName { get; init; }
+        public object Literal { get; init; }
     }
 
-    public class Rule
+    public struct Symbolizer
     {
-        public EqualsTo Filter { get; set; }
-        public SKPaint Fill { get; set; }
-        public SKPaint Stroke { get; set; }
+        public SKPaint Fill { get; init; }
+        public SKPaint Stroke { get; init; }
     }
 
-    public class Layer
+    public struct Rule
     {
-        public string Name { get; set; }
-        public string Title { get; set; }
-        public string Schema { get; set; }
-        public string FeatureType { get; set; }
-        public Type GeometryType { get; set; }
-        public IList<Rule> Rules { get; set; }
+        public EqualsTo[] Filters { get; init; }
+        public Symbolizer[] Symbolizers { get; init; }
+    }
+
+    public struct Layer
+    {
+        public string Name { get; init; }
+        public string Title { get; init; }
+        public string Schema { get; init; }
+        public Type GeometryType { get; init; }
+        public Rule[] Rules { get; init; }
         public IDataSource DataSource { get; set; }
     }
 }

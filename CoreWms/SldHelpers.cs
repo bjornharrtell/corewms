@@ -8,15 +8,6 @@ using SkiaSharp;
 
 namespace CoreWms {
     static class SldHelpers {
-
-        static SKPathEffect horzLinesPath = SKPathEffect.Create2DLine(3, SKMatrix.CreateScale(6, 6));
-
-        static SKPathEffect vertLinesPath = SKPathEffect.Create2DLine(6,
-            Multiply(SKMatrix.CreateRotationDegrees(90), SKMatrix.CreateScale(24, 24)));
-
-        static SKPathEffect diagLinesPath = SKPathEffect.Create2DLine(0.5f,
-            Multiply(SKMatrix.CreateScale(4, 4), SKMatrix.CreateRotationDegrees(45)));
-
         static SKMatrix Multiply(SKMatrix first, SKMatrix second)
         {
             SKMatrix target = SKMatrix.CreateIdentity();
@@ -24,14 +15,32 @@ namespace CoreWms {
             return target;
         }
 
-        static SKPathEffect CreateDiagLines(float width, float spacing)
+        static SKPathEffect CreateLines(float degrees, float width, float spacing)
         {
-            return SKPathEffect.Create2DLine(width, Multiply(SKMatrix.CreateScale(spacing, spacing), SKMatrix.CreateRotationDegrees(45)));
+            return SKPathEffect.Create2DLine(width,
+                Multiply(
+                    SKMatrix.CreateScale(spacing, spacing),
+                    SKMatrix.CreateRotationDegrees(degrees))
+            );
+        }
+
+        static SKPathEffect? CreatePathEffect(string wellKnownName, float width, float size)
+        {
+            if (string.IsNullOrEmpty(wellKnownName))
+                return null;
+            return wellKnownName switch
+            {
+                "shape://vertline" => CreateLines(90, width, size),
+                "shape://horline" => CreateLines(0, width, size),
+                "shape://slash" => CreateLines(45, width, size),
+                "shape://backslash" => CreateLines(-45, width, size),
+                _ => throw new System.Exception($"Unsupported symbol ${wellKnownName}"),
+            };
         }
 
         static public StyledLayerDescriptor FromStream(Stream stream)  {
             var serializer = new XmlSerializer(typeof(StyledLayerDescriptor));
-            if (!(serializer.Deserialize(stream) is StyledLayerDescriptor sld))
+            if (serializer.Deserialize(stream) is not StyledLayerDescriptor sld)
                 throw new System.Exception("Unexpected error deserializing SLD document");
             return sld;
         }
@@ -45,12 +54,9 @@ namespace CoreWms {
                 var mark = graphic.Mark.First();
                 var strokeColor = mark.Stroke.SvgParameter.First(p => p.name == "stroke").Text;
                 var strokeWidth = float.Parse(mark.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text);
-                SKPathEffect? pathEffect = null;
-                if (mark.WellKnownName == "shape://backslash")
-                    pathEffect = CreateDiagLines(strokeWidth, size);
                 return new SKPaint() {
                     Style = SKPaintStyle.Stroke,
-                    PathEffect = pathEffect,
+                    PathEffect = CreatePathEffect(mark.WellKnownName, strokeWidth, size),
                     Color = SKColor.Parse(strokeColor),
                     StrokeWidth = strokeWidth,
                     IsAntialias = true
@@ -59,37 +65,60 @@ namespace CoreWms {
             return null;
         }
 
-        static Rule ToCoreWmsRule(Ogc.Se.Rule seRule)
+        static Symbolizer ToSymboliser(Ogc.Se.Symbolizer s)
         {
-            var ps = seRule.Symbolizer.First();
-            var rule = new Rule();
-            var strokeColor = ps.Stroke.SvgParameter.First(p => p.name == "stroke").Text;
-            var strokeWidth = ps.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text;
-            rule.Stroke = new SKPaint
+            var strokeColor = s.Stroke.SvgParameter.First(p => p.name == "stroke").Text;
+            var strokeWidth = s.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text;
+            var stroke = new SKPaint
             {
                 Style = SKPaintStyle.Stroke,
                 Color = SKColor.Parse(strokeColor),
                 StrokeWidth = float.Parse(strokeWidth),
                 IsAntialias = true,
             };
-            rule.Fill = ToPaint(ps.Fill);
-            rule.Filter = new EqualsTo
-            {
-                PropertyName = (seRule.Filter.First().ComparisonOps.First() as PropertyIsEqualTo).PropertyName.Text
+            var fill = ToPaint(s.Fill);
+            return new Symbolizer() {
+                Stroke = stroke,
+                Fill = fill
             };
-            var literal = (seRule.Filter.First().ComparisonOps.First() as PropertyIsEqualTo).Literal.Text;
-            if (float.TryParse(literal, out float literalFloat))
-                rule.Filter.Literal = (short) literalFloat;
-            else
-                rule.Filter.Literal = literal;
+        }
+
+        static Rule ToCoreWmsRule(Ogc.Se.Rule seRule)
+        {
+            var symbolizers = seRule.Symbolizer.Select(s => ToSymboliser(s)).ToArray();
+
+            // TODO: support other types of filters
+            var seFilter = seRule.Filter.FirstOrDefault();
+            EqualsTo? filter = null;
+            if (seFilter != null)
+            {
+                var propertyIsEqualTo = seFilter.ComparisonOps.First() as PropertyIsEqualTo;
+                var literalText = propertyIsEqualTo.Literal.Text;
+                object literal;
+                if (float.TryParse(literalText, out float literalFloat))
+                    literal = (short) literalFloat;
+                else
+                    literal = literalText;
+                filter = new EqualsTo()
+                {
+                    PropertyName = propertyIsEqualTo.PropertyName.Text,
+                    Literal = literal
+                };
+            }
+
+            var rule = new Rule() {
+                Symbolizers = symbolizers,
+                Filters = filter != null ? new EqualsTo[] { filter.Value } : new EqualsTo[] { }
+            };
+
             return rule;
         }
 
-        static public IList<Rule> ToCoreWmsRules(StyledLayerDescriptor sld) {
+        static public Rule[] ToCoreWmsRules(StyledLayerDescriptor sld) {
             var userStyle = sld.NamedLayer.First().UserStyle.First();
             var featureTypeStyle = userStyle.FeatureTypeStyle.First();
             var rules = featureTypeStyle.Rule.Select(ToCoreWmsRule);
-            return rules.ToList();
+            return rules.ToArray();
         }
     }
 }

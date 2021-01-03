@@ -1,4 +1,4 @@
-# corewms
+# CoreWms
 
 A WMS implementation in .NET Core 3.1 using SkiaSharp as the rendering engine.
 

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
@@ -17,4 +18,11 @@ namespace CoreWms
                     webBuilder.UseStartup<Startup>();
                 });
     }
+}
+
+
+namespace System.Runtime.CompilerServices
+{
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    internal static class IsExternalInit {}
 }

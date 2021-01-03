@@ -97,14 +97,14 @@ namespace CoreWms
 
         async Task<LayerRenderer> ProcessLayer(GetMapParameters parameters, string layer)
         {
-            if (!context.Layers.TryGetValue(layer, out Layer? serverLayer))
+            if (!context.Layers.TryGetValue(layer, out Layer serverLayer))
                 throw new Exception($"Layer {layer} not available");
 
             var renderer = new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox);
 
             var stopwatch = Stopwatch.StartNew();
             await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, renderer.Tolerance))
-                renderer.Draw(serverLayer, f);
+                renderer.Draw(ref serverLayer, f);
             logger.LogTrace($"Rendered layer {layer} ({stopwatch.ElapsedMilliseconds} ms)");
 
             return renderer;

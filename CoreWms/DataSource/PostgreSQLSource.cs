@@ -15,7 +15,7 @@ namespace CoreWms.DataSource
     public class PostgreSQLSource : IDataSource
     {
         readonly ILogger logger;
-        readonly PostGisReader pgreader = new PostGisReader();
+        readonly PostGisReader pgreader = new();
 
         readonly string connectionString;
         readonly string table;
@@ -31,7 +31,7 @@ namespace CoreWms.DataSource
             connectionString = dataSource.ConnectionString;
             table = dataSource.Schema + "." + layer.Name;
             if (layer.Rules != null)
-                extraColumns = new HashSet<string>(layer.Rules.Select(r => r.Filter.PropertyName)).ToArray();
+                extraColumns = new HashSet<string>(layer.Rules.Select(r => r.Filters.FirstOrDefault().PropertyName)).ToArray();
             else
                 extraColumns = new string[] {};
 
