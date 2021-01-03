@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
@@ -32,8 +31,8 @@ namespace CoreWms {
             {
                 "shape://vertline" => CreateLines(90, width, size),
                 "shape://horline" => CreateLines(0, width, size),
-                "shape://slash" => CreateLines(45, width, size),
-                "shape://backslash" => CreateLines(-45, width, size),
+                "shape://slash" => CreateLines(-45, width, size),
+                "shape://backslash" => CreateLines(45, width, size),
                 _ => throw new System.Exception($"Unsupported symbol ${wellKnownName}"),
             };
         }
@@ -65,7 +64,7 @@ namespace CoreWms {
             return null;
         }
 
-        static Symbolizer ToSymboliser(Ogc.Se.Symbolizer s)
+        static Symbolizer ConvertSymbolizer(Ogc.Se.Symbolizer s)
         {
             var strokeColor = s.Stroke.SvgParameter.First(p => p.name == "stroke").Text;
             var strokeWidth = s.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text;
@@ -83,41 +82,38 @@ namespace CoreWms {
             };
         }
 
-        static Rule ToCoreWmsRule(Ogc.Se.Rule seRule)
+        static EqualsTo ConvertFilter(Ogc.Fes.Filter f)
         {
-            var symbolizers = seRule.Symbolizer.Select(s => ToSymboliser(s)).ToArray();
-
             // TODO: support other types of filters
-            var seFilter = seRule.Filter.FirstOrDefault();
-            EqualsTo? filter = null;
-            if (seFilter != null)
+            var propertyIsEqualTo = f.ComparisonOps.First() as PropertyIsEqualTo;
+            var literalText = propertyIsEqualTo.Literal.Text;
+            object literal;
+            if (float.TryParse(literalText, out float literalFloat))
+                literal = (short) literalFloat;
+            else
+                literal = literalText;
+            return new EqualsTo()
             {
-                var propertyIsEqualTo = seFilter.ComparisonOps.First() as PropertyIsEqualTo;
-                var literalText = propertyIsEqualTo.Literal.Text;
-                object literal;
-                if (float.TryParse(literalText, out float literalFloat))
-                    literal = (short) literalFloat;
-                else
-                    literal = literalText;
-                filter = new EqualsTo()
-                {
-                    PropertyName = propertyIsEqualTo.PropertyName.Text,
-                    Literal = literal
-                };
-            }
-
-            var rule = new Rule() {
-                Symbolizers = symbolizers,
-                Filters = filter != null ? new EqualsTo[] { filter.Value } : new EqualsTo[] { }
+                PropertyName = propertyIsEqualTo.PropertyName.Text,
+                Literal = literal
             };
+        }
 
-            return rule;
+        static Rule ConvertRule(Ogc.Se.Rule seRule)
+        {
+            var symbolizers = seRule.Symbolizer.Select(ConvertSymbolizer).ToArray();
+            var filters = seRule.Filter.Select(ConvertFilter).ToArray();
+
+            return new Rule() {
+                Symbolizers = symbolizers,
+                Filters = filters
+            };
         }
 
         static public Rule[] ToCoreWmsRules(StyledLayerDescriptor sld) {
             var userStyle = sld.NamedLayer.First().UserStyle.First();
             var featureTypeStyle = userStyle.FeatureTypeStyle.First();
-            var rules = featureTypeStyle.Rule.Select(ToCoreWmsRule);
+            var rules = featureTypeStyle.Rule.Select(ConvertRule);
             return rules.ToArray();
         }
     }

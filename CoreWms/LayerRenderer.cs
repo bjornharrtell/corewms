@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using SkiaSharp;
@@ -55,12 +53,14 @@ namespace CoreWms
         {
             for (int i = 0; i < l.Rules.Length; i++)
                 for (int j = 0; j < l.Rules[i].Filters.Length; j++)
+                    // TODO: this isn't nice...
                     if (l.Rules[i].Filters[j].Literal.Equals(f.Attributes[l.Rules[i].Filters[j].PropertyName]))
+                    {
                         for (int k = 0; k < l.Rules[i].Symbolizers.Length; k++)
-                        {
                             Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
-                            return;
-                        }
+                        return; // all symbolizers drawn can bail now
+                    }
+            // not drawn by any rule so draw with default symbolizer
             Draw(f.Geometry, ref defaultSymbolizer);
         }
 
@@ -79,7 +79,7 @@ namespace CoreWms
         public void Draw(LineString ls, ref Symbolizer symbolizer)
         {
             var path = new SKPath();
-            Draw(ls, path);
+            TransformToPath(ls, path);
             Draw(path, ref symbolizer);
         }
 
@@ -92,19 +92,19 @@ namespace CoreWms
 
         public void Draw(Polygon p, SKPath path)
         {
-            Draw(p.ExteriorRing, path);
-            foreach (var r in p.InteriorRings)
-                Draw(r, path);
+            TransformToPath(p.ExteriorRing, path);
+            for (int i = 0; i < p.InteriorRings.Length; i++)
+                TransformToPath(p.InteriorRings[i], path);
         }
 
         public void Draw(MultiPolygon mp,ref Symbolizer symbolizer)
         {
-            foreach (var g in mp.Geometries)
-                if (g is Polygon p)
+            for (int i = 0; i < mp.Geometries.Length; i++)
+                if (mp.Geometries[i] is Polygon p)
                     Draw(p, ref symbolizer);
         }
 
-        public void Draw(LineString ls, SKPath path)
+        public void TransformToPath(LineString ls, SKPath path)
         {
             var cs = ls.Coordinates;
             for (int i = 0; i < cs.Length; i++)
@@ -117,9 +117,9 @@ namespace CoreWms
         public void Draw(MultiLineString mls, ref Symbolizer symbolizer)
         {
             var path = new SKPath();
-            foreach (var g in mls.Geometries)
-                if (g is LineString ls)
-                    Draw(ls, path);
+            for (int i = 0; i < mls.Geometries.Length; i++)
+                if (mls[i] is LineString ls)
+                    TransformToPath(ls, path);
             Draw(path, ref symbolizer);
         }
 
@@ -132,6 +132,7 @@ namespace CoreWms
                     canvas.Save();
                     canvas.ClipPath(path);
                     var b = path.Bounds;
+                    // need to overdraw path effect fill to avoid render artifacts
                     b.Inflate(10, 10);
                     canvas.DrawRect(b, symbolizer.Fill);
                     canvas.Restore();
