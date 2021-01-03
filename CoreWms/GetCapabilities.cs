@@ -23,7 +23,7 @@ namespace CoreWms {
             {
                 var serializer = new XmlSerializer(typeof(Ogc.Wms.Capabilities));
                 var encoding = new UTF8Encoding(false, true);
-                XmlWriterSettings settings = new XmlWriterSettings()
+                XmlWriterSettings settings = new()
                 {
                     Encoding = encoding,
                     Indent = true,

@@ -21,19 +21,19 @@ namespace CoreWms
         public double Tolerance => 0.5f * rx;
 
         Symbolizer defaultSymbolizer = new() {
-            Fill = new SKPaint
+            Fill = new Option<SKPaint>(new SKPaint
             {
                 Color = new SKColor(0, 0, 255, 150),
                 Style = SKPaintStyle.Fill,
                 IsAntialias = true
-            },
-            Stroke = new SKPaint
+            }),
+            Stroke = new Option<SKPaint>(new SKPaint
             {
                 Color = new SKColor(0, 0, 255, 255),
                 StrokeWidth = 1.2f,
                 Style = SKPaintStyle.Stroke,
                 IsAntialias = true
-            }
+            })
         };
 
         public LayerRenderer(int width, int height, Envelope e)
@@ -51,17 +51,25 @@ namespace CoreWms
 
         public void Draw(ref Layer l, IFeature f)
         {
-            for (int i = 0; i < l.Rules.Length; i++)
-                for (int j = 0; j < l.Rules[i].Filters.Length; j++)
-                    // TODO: this isn't nice...
+            int i;
+            for (i = 0; i < l.Rules.Length; i++)
+            {
+                int j;
+                for (j = 0; j < l.Rules[i].Filters.Length; j++)
+                {
+                    // TODO: this isn't nice... and might cause duplicate draws
                     if (l.Rules[i].Filters[j].Literal.Equals(f.Attributes[l.Rules[i].Filters[j].PropertyName]))
-                    {
                         for (int k = 0; k < l.Rules[i].Symbolizers.Length; k++)
                             Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
-                        return; // all symbolizers drawn can bail now
-                    }
+                }
+                // no filters draw all symbolizers
+                if (j == 0)
+                    for (int k = 0; k < l.Rules[i].Symbolizers.Length; k++)
+                        Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
+            }
             // not drawn by any rule so draw with default symbolizer
-            Draw(f.Geometry, ref defaultSymbolizer);
+            if (i == 0)
+                Draw(f.Geometry, ref defaultSymbolizer);
         }
 
         public void Draw(Geometry g, ref Symbolizer symbolizer)
@@ -123,27 +131,31 @@ namespace CoreWms
             Draw(path, ref symbolizer);
         }
 
+        private void DrawFill(SKPath path, SKPaint fill)
+        {
+            if (fill.PathEffect != null)
+                DrawFillEffect(path, fill);
+            else
+                canvas.DrawPath(path, fill);
+        }
+
+        private void DrawFillEffect(SKPath path, SKPaint fill)
+        {
+            canvas.Save();
+            canvas.ClipPath(path);
+            var b = path.Bounds;
+            // need to overdraw path effect fill to avoid render artifacts
+            b.Inflate(10, 10);
+            canvas.DrawRect(b, fill);
+            canvas.Restore();
+        }
+
         private void Draw(SKPath path, ref Symbolizer symbolizer)
         {
-            if (symbolizer.Fill != null)
-            {
-                if (symbolizer.Fill.PathEffect != null)
-                {
-                    canvas.Save();
-                    canvas.ClipPath(path);
-                    var b = path.Bounds;
-                    // need to overdraw path effect fill to avoid render artifacts
-                    b.Inflate(10, 10);
-                    canvas.DrawRect(b, symbolizer.Fill);
-                    canvas.Restore();
-                }
-                else
-                {
-                    canvas.DrawPath(path, symbolizer.Fill);
-                }
-            }
-            if (symbolizer.Stroke != null)
-                canvas.DrawPath(path, symbolizer.Stroke);
+            if (symbolizer.Fill.IsSome)
+                DrawFill(path, symbolizer.Fill.Value);
+            if (symbolizer.Stroke.IsSome)
+                canvas.DrawPath(path, symbolizer.Stroke.Value);
         }
 
         private float ToScreenX(double x) => (float) ((x - ox) / rx);

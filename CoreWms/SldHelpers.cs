@@ -44,24 +44,22 @@ namespace CoreWms {
             return sld;
         }
 
-        static SKPaint? ToPaint(Ogc.Se.Fill fill)
+        static Option<SKPaint> ToPaint(Ogc.Se.Fill fill)
         {
-            if (fill.GraphicFill != null)
-            {
-                var graphic = fill.GraphicFill.Graphic;
-                var size = graphic.Size;
-                var mark = graphic.Mark.First();
-                var strokeColor = mark.Stroke.SvgParameter.First(p => p.name == "stroke").Text;
-                var strokeWidth = float.Parse(mark.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text);
-                return new SKPaint() {
-                    Style = SKPaintStyle.Stroke,
-                    PathEffect = CreatePathEffect(mark.WellKnownName, strokeWidth, size),
-                    Color = SKColor.Parse(strokeColor),
-                    StrokeWidth = strokeWidth,
-                    IsAntialias = true
-                };
-            }
-            return null;
+            if (fill == null || fill.GraphicFill == null)
+                return new Option<SKPaint>();
+            var graphic = fill.GraphicFill.Graphic;
+            var size = graphic.Size;
+            var mark = graphic.Mark.First();
+            var strokeColor = mark.Stroke.SvgParameter.First(p => p.name == "stroke").Text;
+            var strokeWidth = float.Parse(mark.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text);
+            return new Option<SKPaint>(new SKPaint() {
+                Style = SKPaintStyle.Stroke,
+                PathEffect = CreatePathEffect(mark.WellKnownName, strokeWidth, size / 1.5f),
+                Color = SKColor.Parse(strokeColor),
+                StrokeWidth = strokeWidth * 1.5f,
+                IsAntialias = true
+            });
         }
 
         static Symbolizer ConvertSymbolizer(Ogc.Se.Symbolizer s)
@@ -72,13 +70,12 @@ namespace CoreWms {
             {
                 Style = SKPaintStyle.Stroke,
                 Color = SKColor.Parse(strokeColor),
-                StrokeWidth = float.Parse(strokeWidth),
+                StrokeWidth = float.Parse(strokeWidth) * 1.5f,
                 IsAntialias = true,
             };
-            var fill = ToPaint(s.Fill);
             return new Symbolizer() {
-                Stroke = stroke,
-                Fill = fill
+                Stroke = new Option<SKPaint>(stroke),
+                Fill = ToPaint(s.Fill)
             };
         }
 

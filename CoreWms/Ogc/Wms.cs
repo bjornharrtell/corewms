@@ -25,11 +25,11 @@ namespace CoreWms.Ogc.Wms
         public string Title = "";
         public string Abstract = "";
         [XmlElement]
-        public List<string> CRS = new List<string>();
+        public List<string> CRS = new();
         [XmlElement("Layer")]
-        public List<Layer> LayerChildren = new List<Layer>();
+        public List<Layer> LayerChildren = new();
         [XmlElement]
-        public List<BoundingBox> BoundingBox = new List<BoundingBox>();
+        public List<BoundingBox> BoundingBox = new();
     }
 
     public class OnlineResource
@@ -42,45 +42,45 @@ namespace CoreWms.Ogc.Wms
 
     public class Get
     {
-        public OnlineResource OnlineResource = new OnlineResource();
+        public OnlineResource OnlineResource = new();
     }
 
     public class HTTP
     {
-        public Get Get = new Get();
+        public Get Get = new();
     }
 
     public class DCPType
     {
-        public HTTP HTTP = new HTTP();
+        public HTTP HTTP = new();
     }
 
     public class GetCapabilities
     {
         public string Format = "text/xml";
-        public DCPType DCPType = new DCPType();
+        public DCPType DCPType = new();
     }
 
     public class GetMap
     {
         [XmlElement]
-        public List<string> Format = new List<string>()
+        public List<string> Format = new()
         {
             "image/png"
         };
-        public DCPType DCPType = new DCPType();
+        public DCPType DCPType = new();
     }
 
     public class Request
     {
-        public GetCapabilities GetCapabilities = new GetCapabilities();
-        public GetMap GetMap = new GetMap();
+        public GetCapabilities GetCapabilities = new();
+        public GetMap GetMap = new();
     }
 
     public class Exception
     {
         [XmlElement]
-        public List<string> Format = new List<string>()
+        public List<string> Format = new()
         {
             "XML"
         };
@@ -88,8 +88,8 @@ namespace CoreWms.Ogc.Wms
 
     public class Capability
     {
-        public Request Request = new Request();
-        public Exception Exception = new Exception();
+        public Request Request = new();
+        public Exception Exception = new();
         public Layer Layer;
     }
 
@@ -103,10 +103,10 @@ namespace CoreWms.Ogc.Wms
     public class Capabilities
     {
         [XmlNamespaceDeclarations]
-        public XmlSerializerNamespaces xmlns = new XmlSerializerNamespaces(
+        public XmlSerializerNamespaces xmlns = new(
             new[] { new XmlQualifiedName("xlink", "http://www.w3.org/1999/xlink") });
 
-        public Service Service = new Service();
-        public Capability Capability = new Capability();
+        public Service Service = new();
+        public Capability Capability = new();
     }
 }

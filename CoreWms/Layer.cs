@@ -15,8 +15,8 @@ namespace CoreWms {
 
     public struct Symbolizer
     {
-        public SKPaint Fill { get; init; }
-        public SKPaint Stroke { get; init; }
+        public Option<SKPaint> Fill { get; init; }
+        public Option<SKPaint> Stroke { get; init; }
     }
 
     public struct Rule

@@ -31,7 +31,7 @@ namespace CoreWms.DataSource
             connectionString = dataSource.ConnectionString;
             table = dataSource.Schema + "." + layer.Name;
             if (layer.Rules != null)
-                extraColumns = new HashSet<string>(layer.Rules.Select(r => r.Filters.FirstOrDefault().PropertyName)).ToArray();
+                extraColumns = new HashSet<string>(layer.Rules.Select(r => r.Filters.FirstOrDefault().PropertyName).Where(pn => !string.IsNullOrEmpty(pn))).ToArray();
             else
                 extraColumns = new string[] {};
 
