@@ -53,7 +53,7 @@ namespace CoreWms.DataSource
 
         public Envelope GetExtent()
         {
-            var sql = $"select st_setsrid(st_extent(shape), 0) from {table}";
+            var sql = $"select st_setsrid(st_extent({geom}), 0) from {table}";
             using var conn = new NpgsqlConnection(connectionString);
             conn.Open();
             using var cmd = new NpgsqlCommand(sql, conn);
@@ -64,7 +64,15 @@ namespace CoreWms.DataSource
         }
 
         public int GetEPSGCode() {
-            return 6501;
+            var sql = $"select st_srid({geom}) from {table} limit 1";
+            using var conn = new NpgsqlConnection(connectionString);
+            conn.Open();
+            using var cmd = new NpgsqlCommand(sql, conn);
+            var srid = cmd.ExecuteScalar();
+            if (srid != null)
+                return (int) srid;
+            else
+                return 6501;
         }
 
         IEnumerable<NpgsqlDbColumn> GetColumnsMeta()
@@ -94,9 +102,9 @@ namespace CoreWms.DataSource
                 $"st_intersects(st_setsrid({geom}, 0), st_makeenvelope({e.MinX}, {e.MinY}, {e.MaxX}, {e.MaxY}))"
             };
             if (typeof(IPolygonal).IsAssignableFrom(geometryType))
-                whereClauses.Add($"st_area(shape) > {tolerance}");
+                whereClauses.Add($"st_area({geom}) > {tolerance}");
             else if (typeof(ILineal).IsAssignableFrom(geometryType))
-                whereClauses.Add($"st_length(shape) > {tolerance}");
+                whereClauses.Add($"st_length({geom}) > {tolerance}");
             var where = string.Join(" and ", whereClauses);
             var select = $"select {columns} from {table} where {where}";
             var sql = $"copy ({select}) to stdout (format binary)";
