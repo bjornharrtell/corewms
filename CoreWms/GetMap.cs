@@ -104,7 +104,7 @@ namespace CoreWms
 
             var stopwatch = Stopwatch.StartNew();
             await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, renderer.Tolerance))
-                renderer.Draw(ref serverLayer, f);
+                renderer.Draw(serverLayer, f);
             logger.LogTrace($"Rendered layer {layer} ({stopwatch.ElapsedMilliseconds} ms)");
 
             return renderer;

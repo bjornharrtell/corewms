@@ -20,7 +20,7 @@ namespace CoreWms
 
         public double Tolerance => 0.5f * rx;
 
-        Symbolizer defaultSymbolizer = new() {
+        readonly Symbolizer defaultSymbolizer = new() {
             Fill = new Option<SKPaint>(new SKPaint
             {
                 Color = new SKColor(0, 0, 255, 150),
@@ -49,7 +49,7 @@ namespace CoreWms
             canvas = new SKCanvas(bitmap);
         }
 
-        public void Draw(ref Layer l, IFeature f)
+        public void Draw(in Layer l, IFeature f)
         {
             int i;
             for (i = 0; i < l.Rules.Length; i++)
@@ -60,42 +60,42 @@ namespace CoreWms
                     // TODO: this isn't nice... and might cause duplicate draws
                     if (l.Rules[i].Filters[j].Literal.Equals(f.Attributes[l.Rules[i].Filters[j].PropertyName]))
                         for (int k = 0; k < l.Rules[i].Symbolizers.Length; k++)
-                            Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
+                            Draw(f.Geometry, l.Rules[i].Symbolizers[k]);
                 }
                 // no filters draw all symbolizers
                 if (j == 0)
                     for (int k = 0; k < l.Rules[i].Symbolizers.Length; k++)
-                        Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
+                        Draw(f.Geometry, l.Rules[i].Symbolizers[k]);
             }
             // not drawn by any rule so draw with default symbolizer
             if (i == 0)
-                Draw(f.Geometry, ref defaultSymbolizer);
+                Draw(f.Geometry, defaultSymbolizer);
         }
 
-        public void Draw(Geometry g, ref Symbolizer symbolizer)
+        public void Draw(Geometry g, in Symbolizer symbolizer)
         {
             if (g is LineString ls)
-                Draw(ls, ref symbolizer);
+                Draw(ls, symbolizer);
             else if (g is MultiLineString mls)
-                Draw(mls, ref symbolizer);
+                Draw(mls, symbolizer);
             else if (g is Polygon p)
-                Draw(p, ref symbolizer);
+                Draw(p, symbolizer);
             else if (g is MultiPolygon mp)
-                Draw(mp, ref symbolizer);
+                Draw(mp, symbolizer);
         }
 
-        public void Draw(LineString ls, ref Symbolizer symbolizer)
+        public void Draw(LineString ls, in Symbolizer symbolizer)
         {
             var path = new SKPath();
             TransformToPath(ls, path);
-            Draw(path, ref symbolizer);
+            Draw(path, symbolizer);
         }
 
-        public void Draw(Polygon p, ref Symbolizer symbolizer)
+        public void Draw(Polygon p, in Symbolizer symbolizer)
         {
             var path = new SKPath();
             Draw(p, path);
-            Draw(path, ref symbolizer);
+            Draw(path, symbolizer);
         }
 
         public void Draw(Polygon p, SKPath path)
@@ -105,11 +105,11 @@ namespace CoreWms
                 TransformToPath(p.InteriorRings[i], path);
         }
 
-        public void Draw(MultiPolygon mp,ref Symbolizer symbolizer)
+        public void Draw(MultiPolygon mp, in Symbolizer symbolizer)
         {
             for (int i = 0; i < mp.Geometries.Length; i++)
                 if (mp.Geometries[i] is Polygon p)
-                    Draw(p, ref symbolizer);
+                    Draw(p, symbolizer);
         }
 
         public void TransformToPath(LineString ls, SKPath path)
@@ -122,13 +122,13 @@ namespace CoreWms
                     path.LineTo(ToScreenX(cs[i].X), ToScreenY(cs[i].Y));
         }
 
-        public void Draw(MultiLineString mls, ref Symbolizer symbolizer)
+        public void Draw(MultiLineString mls, in Symbolizer symbolizer)
         {
             var path = new SKPath();
             for (int i = 0; i < mls.Geometries.Length; i++)
                 if (mls[i] is LineString ls)
                     TransformToPath(ls, path);
-            Draw(path, ref symbolizer);
+            Draw(path, symbolizer);
         }
 
         private void DrawFill(SKPath path, SKPaint fill)
@@ -150,7 +150,7 @@ namespace CoreWms
             canvas.Restore();
         }
 
-        private void Draw(SKPath path, ref Symbolizer symbolizer)
+        private void Draw(SKPath path, in Symbolizer symbolizer)
         {
             if (symbolizer.Fill.IsSome)
                 DrawFill(path, symbolizer.Fill.Value);
