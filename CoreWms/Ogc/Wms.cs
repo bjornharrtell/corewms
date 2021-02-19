@@ -109,4 +109,21 @@ namespace CoreWms.Ogc.Wms
         public Service Service = new();
         public Capability Capability = new();
     }
+
+    public class ServiceException
+    {
+        [XmlAttribute]
+        public string code;
+
+        [XmlText]
+        public string Text;
+    }
+    public class ServiceExceptionReport
+    {
+        [XmlAttribute]
+        public string version;
+
+        [XmlElement]
+        public List<ServiceException> ServiceException = new();
+    }
 }

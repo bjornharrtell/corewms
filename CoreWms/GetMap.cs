@@ -98,7 +98,7 @@ namespace CoreWms
         async Task<LayerRenderer> ProcessLayer(GetMapParameters parameters, string layer)
         {
             if (!context.Layers.TryGetValue(layer, out Layer serverLayer))
-                throw new Exception($"Layer {layer} not available");
+                throw new LayerNotDefinedException($"Layer {layer} is not defined");
 
             var renderer = new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox);
 

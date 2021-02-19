@@ -1,6 +1,7 @@
 using CoreWms.Config;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +37,9 @@ namespace CoreWms
             services.AddSingleton<IContext, Context>();
             services.AddScoped<GetCapabilities>();
             services.AddScoped<GetMap>();
+
+            services
+                .AddMvcCore(options => options.OutputFormatters.Add(new XmlSerializerOutputFormatter()));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -43,6 +47,10 @@ namespace CoreWms
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler("/error");
             }
 
             //app.UseHttpsRedirection();
