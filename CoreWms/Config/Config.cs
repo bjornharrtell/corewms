@@ -1,11 +1,9 @@
 #nullable disable
-using System.Collections.Generic;
 
-namespace CoreWms.Config
+namespace CoreWms.Config;
+
+public class Config : IConfig
 {
-    public class Config : IConfig
-    {
-        public IDictionary<string, DataSource> DataSources { get; set; }
-        public IDictionary<string, Layer> Layers { get; set; }
-    }
+    public IDictionary<string, DataSource> DataSources { get; set; }
+    public IDictionary<string, Layer> Layers { get; set; }
 }

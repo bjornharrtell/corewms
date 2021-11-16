@@ -7,15 +7,11 @@ using Npgsql;
 NpgsqlConnection.GlobalTypeMapper.UseNetTopologySuite();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.AddSimpleConsole();
 builder.Services.AddControllers();
-builder.Services.Configure<IISServerOptions>(options =>
-{
-    options.AllowSynchronousIO = true;
-});
-builder.Services.Configure<KestrelServerOptions>(options =>
-{
-    options.AllowSynchronousIO = true;
-});
+builder.Services.Configure<IISServerOptions>(o => o.AllowSynchronousIO = true);
+builder.Services.Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);
+
 var config = new Config();
 builder.Configuration.Bind("CoreWms", config);
 builder.Services.AddSingleton<IConfig>(config);
@@ -23,7 +19,7 @@ builder.Services.AddSingleton<IContext, Context>();
 builder.Services.AddScoped<GetCapabilities>();
 builder.Services.AddScoped<GetMap>();
 builder.Services
-    .AddMvcCore(options => options.OutputFormatters.Add(new XmlSerializerOutputFormatter()));
+    .AddMvcCore(o => o.OutputFormatters.Add(new XmlSerializerOutputFormatter()));
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
@@ -31,6 +27,5 @@ if (app.Environment.IsDevelopment())
 else
     app.UseExceptionHandler("/error");
 app.UseRouting();
-//app.UseAuthorization();
 app.MapControllers();
 app.Run();

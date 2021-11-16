@@ -1,26 +1,24 @@
 #nullable disable
-using System.Collections.Generic;
 using System.Xml.Serialization;
 using CoreWms.Ogc.Se;
 
-namespace CoreWms.Ogc.Sld
+namespace CoreWms.Ogc.Sld;
+
+public class UserStyle
 {
-    public class UserStyle
-    {
-        [XmlElement(Namespace = "http://www.opengis.net/se")]
-        public List<FeatureTypeStyle> FeatureTypeStyle;
-    }
+    [XmlElement(Namespace = "http://www.opengis.net/se")]
+    public List<FeatureTypeStyle> FeatureTypeStyle;
+}
 
-    public class NamedLayer
-    {
-        [XmlElement]
-        public List<UserStyle> UserStyle;
-    }
+public class NamedLayer
+{
+    [XmlElement]
+    public List<UserStyle> UserStyle;
+}
 
-    [XmlRoot(Namespace = "http://www.opengis.net/sld")]
-    public class StyledLayerDescriptor
-    {
-        [XmlElement]
-        public List<NamedLayer> NamedLayer;
-    }
+[XmlRoot(Namespace = "http://www.opengis.net/sld")]
+public class StyledLayerDescriptor
+{
+    [XmlElement]
+    public List<NamedLayer> NamedLayer;
 }

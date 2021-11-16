@@ -1,14 +1,13 @@
 using CoreWms.Controllers;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace IntegrationTests
+namespace IntegrationTests;
+
+public class CustomWebApplicationFactory
+    : WebApplicationFactory<WmsController>
 {
-    public class CustomWebApplicationFactory
-        : WebApplicationFactory<WmsController>
+    public CustomWebApplicationFactory()
     {
-        public CustomWebApplicationFactory()
-        {
-            Server.AllowSynchronousIO = true;
-        }
+        Server.AllowSynchronousIO = true;
     }
 }

@@ -1,10 +1,9 @@
 #nullable disable
-namespace CoreWms.Config
+namespace CoreWms.Config;
+
+public class Layer
 {
-    public class Layer
-    {
-        public string Title { get; set; }
-        public string DataSource { get; set; }
-        public string GeometryType { get; set; }
-    }
+    public string Title { get; set; }
+    public string DataSource { get; set; }
+    public string GeometryType { get; set; }
 }

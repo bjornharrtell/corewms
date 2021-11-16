@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 
-namespace CoreWms
+namespace CoreWms;
+
+public interface IContext
 {
-    public interface IContext
-    {
-        IReadOnlyDictionary<string, Layer> Layers { get; }
-    }
+    IReadOnlyDictionary<string, Layer> Layers { get; }
 }
