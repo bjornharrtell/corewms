@@ -12,15 +12,19 @@ namespace CoreWms.Controllers
         public ServiceExceptionReport Error()
         {
             var context = HttpContext.Features.Get<IExceptionHandlerFeature>();
-            var exception = context.Error;
+            var exception = context?.Error;
+            if (exception == null)
+                exception = new System.Exception("Could not resolve IExceptionHandlerFeature");
             var code = 200;
 
             Response.StatusCode = code;
 
             var serviceExceptionReport = new ServiceExceptionReport();
-            var serviceException = new CoreWms.Ogc.Wms.ServiceException();
-            serviceException.code = exception.GetType().Name.Replace("Exception", "");
-            serviceException.Text = exception.Message;
+            var serviceException = new Ogc.Wms.ServiceException
+            {
+                code = exception.GetType().Name.Replace("Exception", ""),
+                Text = exception.Message
+            };
             serviceExceptionReport.ServiceException.Add(serviceException);
             return serviceExceptionReport;
         }

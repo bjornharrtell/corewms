@@ -1,3 +1,4 @@
+using System;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
 using SkiaSharp;
@@ -58,7 +59,9 @@ namespace CoreWms
                 for (j = 0; j < l.Rules[i].Filters.Length; j++)
                 {
                     // TODO: this isn't nice... and might cause duplicate draws
-                    if (l.Rules[i].Filters[j].Literal.Equals(f.Attributes[l.Rules[i].Filters[j].PropertyName]))
+                    var literal = Convert.ToInt32(l.Rules[i].Filters[j].Literal);
+                    var value = Convert.ToInt32(f.Attributes[l.Rules[i].Filters[j].PropertyName]);
+                    if (literal == value)
                         for (int k = 0; k < l.Rules[i].Symbolizers.Length; k++)
                             Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
                 }
@@ -114,12 +117,12 @@ namespace CoreWms
 
         public void TransformToPath(LineString ls, SKPath path)
         {
-            var cs = ls.Coordinates;
-            for (int i = 0; i < cs.Length; i++)
+            var cs = ls.CoordinateSequence;
+            for (int i = 0; i < cs.Count; i++)
                 if (i == 0)
-                    path.MoveTo(ToScreenX(cs[i].X), ToScreenY(cs[i].Y));
+                    path.MoveTo(ToScreenX(cs.GetX(i)), ToScreenY(cs.GetY(i)));
                 else
-                    path.LineTo(ToScreenX(cs[i].X), ToScreenY(cs[i].Y));
+                    path.LineTo(ToScreenX(cs.GetX(i)), ToScreenY(cs.GetY(i)));
         }
 
         public void Draw(MultiLineString mls, ref Symbolizer symbolizer)
