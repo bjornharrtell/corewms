@@ -3,6 +3,7 @@ using CoreWms.Config;
 using CoreWms.DataSource;
 using Microsoft.Extensions.Logging;
 using NetTopologySuite.Geometries;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CoreWms;
 
@@ -10,13 +11,15 @@ public class Context : IContext
 {
     readonly ILogger<Context> logger;
     readonly IConfig config;
+    readonly IServiceProvider serviceProvider;
 
     public IReadOnlyDictionary<string, Layer> Layers { get; }
 
-    public Context(ILogger<Context> logger, IConfig config)
+    public Context(ILogger<Context> logger, IConfig config, IServiceProvider serviceProvider)
     {
         this.logger = logger;
         this.config = config;
+        this.serviceProvider = serviceProvider;
         logger.LogInformation("Initializing CoreWms");
         Layers = new ReadOnlyDictionary<string, Layer>(CreateLayers());
     }
@@ -40,8 +43,8 @@ public class Context : IContext
         }
         catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException)
         {
-            logger.LogWarning($"Style for layer {name} not found falling back to default");
-            return new Rule[] { };
+            logger.LogWarning("Style for layer {name} not found falling back to default", name);
+            return Array.Empty<Rule>();
         }
     }
 
@@ -52,9 +55,11 @@ public class Context : IContext
             throw new Exception($"Could not find {dataSourceName} data source");
 
         if (dataSource.Type == "FlatGeobuf")
-            return new FlatGeobufSource(logger, dataSource, layer);
+            return serviceProvider.GetRequiredService<FlatGeobufSource>()
+                .Configure(dataSource, layer);
         else if (dataSource.Type == "PostgreSQL")
-            return new PostgreSQLSource(logger, dataSource, layer);
+            return serviceProvider.GetRequiredService<PostgreSQLSource>()
+                .Configure(dataSource, layer);
         else
             throw new Exception($"Unknown datasource type {dataSource.Type}");
     }

@@ -25,7 +25,7 @@ public abstract class Request
         RequestEnum = ParseRequest(request);
     }
 
-    private Version ParseVersion(string version)
+    private static Version ParseVersion(string version)
     {
         if (version == "1.3.0")
             return Version.v1_3_0;
@@ -36,7 +36,7 @@ public abstract class Request
         throw new Exception($"Version {version} is not supported");
     }
 
-    private RequestEnum ParseRequest(string request)
+    private static RequestEnum ParseRequest(string request)
     {
         if (request == "GetMap")
             return RequestEnum.GetMap;

@@ -1,5 +1,6 @@
 using CoreWms;
 using CoreWms.Config;
+using CoreWms.DataSource;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Npgsql;
@@ -16,6 +17,8 @@ var config = new Config();
 builder.Configuration.Bind("CoreWms", config);
 builder.Services.AddSingleton<IConfig>(config);
 builder.Services.AddSingleton<IContext, Context>();
+builder.Services.AddTransient<FlatGeobufSource>();
+builder.Services.AddTransient<PostgreSQLSource>();
 builder.Services.AddScoped<GetCapabilities>();
 builder.Services.AddScoped<GetMap>();
 builder.Services

@@ -44,7 +44,7 @@ public class GetCapabilities
         }
     }
 
-    Ogc.Wms.Layer ToCapabilitiesLayer(Layer layer)
+    private static Ogc.Wms.Layer ToCapabilitiesLayer(Layer layer)
     {
         var epsg = "EPSG:" + layer.DataSource.GetEPSGCode();
         var capLayer = new Ogc.Wms.Layer
@@ -69,8 +69,10 @@ public class GetCapabilities
     Ogc.Wms.Capabilities GenerateCapabilities()
     {
         var capabilities = new Ogc.Wms.Capabilities();
-        var rootLayer = new Ogc.Wms.Layer();
-        rootLayer.LayerChildren = context.Layers.Values.Select(l => ToCapabilitiesLayer(l)).ToList();
+        var rootLayer = new Ogc.Wms.Layer
+        {
+            LayerChildren = context.Layers.Values.Select(l => ToCapabilitiesLayer(l)).ToList()
+        };
         capabilities.Capability.Layer = rootLayer;
         capabilities.Capability.Request.GetCapabilities.DCPType.HTTP.Get.OnlineResource.href = "http://localhost:5000/wms?service=WMS";
         capabilities.Capability.Request.GetMap.DCPType.HTTP.Get.OnlineResource.href = "http://localhost:5000/wms?service=WMS";

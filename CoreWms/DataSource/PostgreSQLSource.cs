@@ -13,39 +13,17 @@ public class PostgreSQLSource : IDataSource
     readonly ILogger logger;
     readonly PostGisReader pgreader = new();
 
-    readonly string connectionString;
-    readonly string table;
-    readonly string[] extraColumns;
+    string? connectionString;
+    string? table;
+    string[]?extraColumns;
 
-    readonly string geom;
-    readonly Type geometryType;
+    string? geom;
+    Type? geometryType;
     readonly IDictionary<string, NpgsqlDbType> extraColumnsSet = new Dictionary<string, NpgsqlDbType>();
 
-    public PostgreSQLSource(ILogger logger, Config.DataSource dataSource, Layer layer)
+    public PostgreSQLSource(ILogger<PostgreSQLSource> logger)
     {
         this.logger = logger;
-        connectionString = dataSource.ConnectionString;
-        table = dataSource.Schema + "." + layer.Name;
-        if (layer.Rules != null)
-            extraColumns = new HashSet<string>(layer.Rules.Select(r => r.Filters.FirstOrDefault().PropertyName).Where(pn => !string.IsNullOrEmpty(pn))).ToArray();
-        else
-            extraColumns = new string[] { };
-
-        var columnsMeta = GetColumnsMeta();
-        var geometryColumn = columnsMeta.FirstOrDefault(c => c.NpgsqlDbType == NpgsqlDbType.Geometry);
-        if (geometryColumn == null)
-            throw new Exception($"Cannot find a geometry column for table {table}");
-        geom = geometryColumn.ColumnName;
-        geometryType = layer.GeometryType;
-        foreach (var column in extraColumns)
-        {
-            var columnMeta = columnsMeta.FirstOrDefault(c => c.ColumnName == column);
-            if (columnMeta == null)
-                throw new Exception($"Cannot find column {column} in {table}");
-            if (columnMeta.NpgsqlDbType == null)
-                throw new Exception($"Unknown column type for {column} in {table}");
-            extraColumnsSet.Add(column, columnMeta.NpgsqlDbType.Value);
-        }
     }
 
     public Envelope GetExtent()
@@ -130,7 +108,7 @@ public class PostgreSQLSource : IDataSource
         return attributes;
     }
 
-    private async Task<object> ReadAttribute(NpgsqlBinaryExporter reader, NpgsqlDbType npgsqlDbType)
+    private static async Task<object> ReadAttribute(NpgsqlBinaryExporter reader, NpgsqlDbType npgsqlDbType)
     {
         return npgsqlDbType switch
         {
@@ -144,5 +122,32 @@ public class PostgreSQLSource : IDataSource
             NpgsqlDbType.TimestampTz => await reader.ReadAsync<DateTimeOffset>(),
             _ => throw new Exception("Unknown datatype {npgsqlDbType}"),
         };
+    }
+
+    public IDataSource Configure(Config.DataSource dataSource, Layer layer)
+    {
+        connectionString = dataSource.ConnectionString;
+        table = dataSource.Schema + "." + layer.Name;
+        if (layer.Rules != null)
+            extraColumns = new HashSet<string>(layer.Rules.Select(r => r.Filters.FirstOrDefault().PropertyName).Where(pn => !string.IsNullOrEmpty(pn))).ToArray();
+        else
+            extraColumns = Array.Empty<string>();
+
+        var columnsMeta = GetColumnsMeta();
+        var geometryColumn = columnsMeta.FirstOrDefault(c => c.NpgsqlDbType == NpgsqlDbType.Geometry);
+        if (geometryColumn == null)
+            throw new Exception($"Cannot find a geometry column for table {table}");
+        geom = geometryColumn.ColumnName;
+        geometryType = layer.GeometryType;
+        foreach (var column in extraColumns)
+        {
+            var columnMeta = columnsMeta.FirstOrDefault(c => c.ColumnName == column);
+            if (columnMeta == null)
+                throw new Exception($"Cannot find column {column} in {table}");
+            if (columnMeta.NpgsqlDbType == null)
+                throw new Exception($"Unknown column type for {column} in {table}");
+            extraColumnsSet.Add(column, columnMeta.NpgsqlDbType.Value);
+        }
+        return this;
     }
 }

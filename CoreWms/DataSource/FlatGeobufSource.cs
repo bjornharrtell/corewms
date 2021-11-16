@@ -8,11 +8,12 @@ namespace CoreWms.DataSource;
 
 public class FlatGeobufSource : IDataSource
 {
-    readonly string filePath;
+    private readonly ILogger logger;
+    string filePath = "";
 
-    public FlatGeobufSource(ILogger logger, Config.DataSource dataSource, Layer layer)
+    public FlatGeobufSource(ILogger<FlatGeobufSource> logger)
     {
-        filePath = Path.Join(dataSource.Path, layer.Name) + ".fgb";
+        this.logger = logger;
     }
 
     public Envelope GetExtent()
@@ -33,9 +34,18 @@ public class FlatGeobufSource : IDataSource
 
     public async IAsyncEnumerable<IFeature> FetchAsync(Envelope e, double tolerance = 0)
     {
+        var i = 0;
         using var stream = File.OpenRead(filePath);
-        foreach (var f in FeatureCollectionConversions.Deserialize(stream, e))
+        foreach (var f in FeatureCollectionConversions.Deserialize(stream, e)) {
             yield return await Task.FromResult(f);
+            i++;
+        }
+        logger.LogTrace("Fetched {i} features", i);
     }
 
+    public IDataSource Configure(Config.DataSource dataSource, Layer layer)
+    {
+        filePath = Path.Join(dataSource.Path, layer.Name) + ".fgb";
+        return this;
+    }
 }

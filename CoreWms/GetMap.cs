@@ -70,7 +70,7 @@ public class GetMap : Request
         return parameters;
     }
 
-    private Format ParseFormat(string format)
+    private static Format ParseFormat(string format)
     {
         if (format == "image/png")
             return Format.Png;
@@ -88,7 +88,7 @@ public class GetMap : Request
         stopwatch = Stopwatch.StartNew();
         if (renders.Length == 1)
             renders[0].Bitmap.Encode(stream, SKEncodedImageFormat.Png, 100);
-        logger.LogTrace($"Encoded {parameters.Format} ({stopwatch.ElapsedMilliseconds} ms)");
+        logger.LogTrace("Encoded {Format} ({ElapsedMilliseconds} ms)", parameters.Format, stopwatch.ElapsedMilliseconds);
         // TODO: else blend into single bitmap and encode
     }
 
@@ -102,7 +102,7 @@ public class GetMap : Request
         var stopwatch = Stopwatch.StartNew();
         await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, renderer.Tolerance))
             renderer.Draw(ref serverLayer, f);
-        logger.LogTrace($"Rendered layer {layer} ({stopwatch.ElapsedMilliseconds} ms)");
+        logger.LogTrace("Rendered layer {layer} ({ElapsedMilliseconds} ms)", layer, stopwatch.ElapsedMilliseconds);
 
         return renderer;
     }
