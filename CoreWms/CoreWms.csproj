@@ -1,13 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="FlatGeobuf" Version="3.19.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
     <PackageReference Include="NetTopologySuite" Version="2.4.0" />
     <PackageReference Include="NetTopologySuite.Features" Version="2.1.0" />
     <PackageReference Include="Npgsql" Version="6.0.0" />
@@ -17,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <!--ProjectReference Include="../flatgeobuf/src/net/FlatGeobuf/FlatGeobuf.csproj" /-->
+	  <!--ProjectReference Include="../../flatgeobuf/src/net/FlatGeobuf/FlatGeobuf.csproj" /-->
   </ItemGroup>
 
 </Project>
