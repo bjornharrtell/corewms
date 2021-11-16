@@ -10,4 +10,11 @@
     <ProjectReference Include="../CoreWms/CoreWms.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ContentWithTargetPath Include="../TestData/**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>TestData/%(RecursiveDir)/%(Filename)%(Extension)</TargetPath>
+    </ContentWithTargetPath>
+  </ItemGroup>
+
 </Project>
