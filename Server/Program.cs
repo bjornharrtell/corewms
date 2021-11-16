@@ -1,28 +1,36 @@
-using System.ComponentModel;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
+using CoreWms;
+using CoreWms.Config;
+using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Npgsql;
 
-namespace CoreWms
+NpgsqlConnection.GlobalTypeMapper.UseNetTopologySuite();
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllers();
+builder.Services.Configure<IISServerOptions>(options =>
 {
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            CreateHostBuilder(args).Build().Run();
-        }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
-    }
-}
-
-
-namespace System.Runtime.CompilerServices
+    options.AllowSynchronousIO = true;
+});
+builder.Services.Configure<KestrelServerOptions>(options =>
 {
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    internal static class IsExternalInit {}
-}
+    options.AllowSynchronousIO = true;
+});
+var config = new Config();
+builder.Configuration.Bind("CoreWms", config);
+builder.Services.AddSingleton<IConfig>(config);
+builder.Services.AddSingleton<IContext, Context>();
+builder.Services.AddScoped<GetCapabilities>();
+builder.Services.AddScoped<GetMap>();
+builder.Services
+    .AddMvcCore(options => options.OutputFormatters.Add(new XmlSerializerOutputFormatter()));
+
+var app = builder.Build();
+if (app.Environment.IsDevelopment())
+    app.UseDeveloperExceptionPage();
+else
+    app.UseExceptionHandler("/error");
+app.UseRouting();
+//app.UseAuthorization();
+app.MapControllers();
+app.Run();
