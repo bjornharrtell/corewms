@@ -4,7 +4,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Xunit;
 
-namespace IntegrationTests;
+namespace CoreWms.IntegrationTests;
 
 public class BasicTests : IClassFixture<CustomWebApplicationFactory>
 {

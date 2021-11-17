@@ -1,7 +1,7 @@
-using CoreWms.Controllers;
+using CoreWms.WebApp.Controllers;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace IntegrationTests;
+namespace CoreWms.IntegrationTests;
 
 public class CustomWebApplicationFactory
     : WebApplicationFactory<WmsController>

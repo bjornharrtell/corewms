@@ -2,7 +2,7 @@ using CoreWms.Ogc.Wms;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CoreWms.Controllers;
+namespace CoreWms.WebApp.Controllers;
 
 [ApiExplorerSettings(IgnoreApi = true)]
 public class ErrorsController : ControllerBase
