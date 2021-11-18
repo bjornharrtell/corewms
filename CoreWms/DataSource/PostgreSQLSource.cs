@@ -5,6 +5,7 @@ using NetTopologySuite.IO;
 using Npgsql;
 using Npgsql.Schema;
 using NpgsqlTypes;
+using Dapper;
 
 namespace CoreWms.DataSource;
 
@@ -31,8 +32,7 @@ public class PostgreSQLSource : IDataSource
         var sql = $"select st_setsrid(st_extent({geom}), 0) from {table}";
         using var conn = new NpgsqlConnection(connectionString);
         conn.Open();
-        using var cmd = new NpgsqlCommand(sql, conn);
-        var polygon = cmd.ExecuteScalar() as Polygon;
+        var polygon = conn.QueryFirst<Polygon>(sql);
         if (polygon == null)
             throw new Exception("Unexpected failure determining layer extent");
         return polygon.EnvelopeInternal;
@@ -43,12 +43,8 @@ public class PostgreSQLSource : IDataSource
         var sql = $"select st_srid({geom}) from {table} limit 1";
         using var conn = new NpgsqlConnection(connectionString);
         conn.Open();
-        using var cmd = new NpgsqlCommand(sql, conn);
-        var srid = cmd.ExecuteScalar();
-        if (srid != null)
-            return (int)srid;
-        else
-            return 6501;
+        var srid = conn.QueryFirstOrDefault<int?>(sql);
+        return srid ?? 6501;
     }
 
     IEnumerable<NpgsqlDbColumn> GetColumnsMeta()
