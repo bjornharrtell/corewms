@@ -54,7 +54,7 @@ public class PostgreSQLSource : IDataSource
     IEnumerable<NpgsqlDbColumn> GetColumnsMeta()
     {
         var sql = $"select * from {table} limit 1";
-        logger.LogTrace(sql);
+        logger.LogTrace("SQL: {sql}", sql);
         using var conn = new NpgsqlConnection(connectionString);
         conn.Open();
         using var cmd = new NpgsqlCommand(sql, conn);
@@ -84,7 +84,7 @@ public class PostgreSQLSource : IDataSource
         var where = string.Join(" and ", whereClauses);
         var select = $"select {columns} from {table} where {where}";
         var sql = $"copy ({select}) to stdout (format binary)";
-        logger.LogTrace(sql);
+        logger.LogTrace("SQL: {sql}", sql);
         using var reader = conn.BeginBinaryExport(sql);
         while (reader.StartRow() != -1)
             yield return await ReadFeature(reader);
