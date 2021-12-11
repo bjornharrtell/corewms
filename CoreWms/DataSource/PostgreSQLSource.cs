@@ -15,10 +15,15 @@ public class PostgreSQLSource : IDataSource
     readonly PostGisReader pgreader = new();
 
     string? connectionString;
+    string? schema;
     string? table;
+    string? where;
+    Envelope? envelope;
+
     string[]?extraColumns;
 
     string? geom;
+    int? srid;
     Type? geometryType;
     readonly IDictionary<string, NpgsqlDbType> extraColumnsSet = new Dictionary<string, NpgsqlDbType>();
 
@@ -29,27 +34,42 @@ public class PostgreSQLSource : IDataSource
 
     public Envelope GetExtent()
     {
-        var sql = $"select st_setsrid(st_extent({geom}), 0) from {table}";
+        logger.LogTrace("GetExtent called");
+        if (envelope != null)
+        {
+            logger.LogTrace("Returning cached envelope {}", this.envelope);
+            return envelope;
+        }
+        var srid = GetEPSGCode();
+        var sql = $"select st_setsrid(st_estimatedextent('{schema}', '{table}', '{geom}'), {srid})";
+        logger.LogTrace("SQL: {sql}", sql);
         using var conn = new NpgsqlConnection(connectionString);
         conn.Open();
-        var polygon = conn.QueryFirst<Polygon>(sql);
+        var polygon = conn.ExecuteScalar<Polygon>(sql);
         if (polygon == null)
             throw new Exception("Unexpected failure determining layer extent");
+        logger.LogTrace("polygon.EnvelopeInternal: {EnvelopeInternal}", polygon.EnvelopeInternal);
         return polygon.EnvelopeInternal;
     }
 
     public int GetEPSGCode()
     {
-        var sql = $"select st_srid({geom}) from {table} limit 1";
+        if (this.srid.HasValue)
+        {
+            logger.LogTrace("Returning cached srid {}", this.srid);
+            return this.srid.Value;
+        }
+        var sql = $"select st_srid({geom}) from {schema}.{table} limit 1";
         using var conn = new NpgsqlConnection(connectionString);
         conn.Open();
         var srid = conn.QueryFirstOrDefault<int?>(sql);
-        return srid ?? 6501;
+        this.srid = srid ?? 0;
+        return this.srid.Value;
     }
 
     IEnumerable<NpgsqlDbColumn> GetColumnsMeta()
     {
-        var sql = $"select * from {table} limit 1";
+        var sql = $"select * from {schema}.{table} limit 1";
         logger.LogTrace("SQL: {sql}", sql);
         using var conn = new NpgsqlConnection(connectionString);
         conn.Open();
@@ -61,24 +81,25 @@ public class PostgreSQLSource : IDataSource
 
     public async IAsyncEnumerable<IFeature> FetchAsync(Envelope e, double tolerance = 0)
     {
+        var srid = GetEPSGCode();
         var columnsList = new List<string>();
-        var geomColumn = tolerance > 0 ? $"st_snaptogrid({geom}, {tolerance}, {tolerance}) geom" : $"{geom} geom";
+        var geomColumn = tolerance > 0 ? $"st_snaptogrid(st_force2d({geom}), {tolerance}, {tolerance}) geom" : $"st_force2d({geom}) geom";
         columnsList.Add(geomColumn);
         if (extraColumns != null)
             columnsList.AddRange(extraColumns);
         var columns = string.Join(", ", columnsList);
         await using var conn = new NpgsqlConnection(connectionString);
         await conn.OpenAsync();
-        var whereClauses = new List<string>()
-            {
-                $"st_intersects(st_setsrid({geom}, 0), st_makeenvelope({e.MinX}, {e.MinY}, {e.MaxX}, {e.MaxY}))"
-            };
+        var whereGeomFilter = $"st_intersects({geom}, st_makeenvelope({e.MinX}, {e.MinY}, {e.MaxX}, {e.MaxY}, {srid}))";
+        var whereClauses = new List<string>() { whereGeomFilter };
         if (typeof(IPolygonal).IsAssignableFrom(geometryType))
             whereClauses.Add($"st_area({geom}) > {tolerance}");
         else if (typeof(ILineal).IsAssignableFrom(geometryType))
             whereClauses.Add($"st_length({geom}) > {tolerance}");
+        if (!string.IsNullOrEmpty(this.where))
+            whereClauses.Add(this.where);
         var where = string.Join(" and ", whereClauses);
-        var select = $"select {columns} from {table} where {where}";
+        var select = $"select {columns} from {schema}.{table} where {where}";
         var sql = $"copy ({select}) to stdout (format binary)";
         logger.LogTrace("SQL: {sql}", sql);
         using var reader = conn.BeginBinaryExport(sql);
@@ -122,19 +143,26 @@ public class PostgreSQLSource : IDataSource
 
     public IDataSource Configure(Config.DataSource dataSource, Layer layer)
     {
+        logger.LogTrace("Configuring {Name}", layer.Name);
         connectionString = dataSource.ConnectionString;
-        table = dataSource.Schema + "." + layer.Name;
+        schema = dataSource.Schema;
+        table = layer.Name;
+        where = layer.Where;
+        if (layer.Extent != null) 
+            envelope = new Envelope(layer.Extent[0], layer.Extent[2], layer.Extent[1], layer.Extent[3]);
         if (layer.Rules != null)
             extraColumns = new HashSet<string>(layer.Rules.Select(r => r.Filters.FirstOrDefault().PropertyName).Where(pn => !string.IsNullOrEmpty(pn))).ToArray();
         else
             extraColumns = Array.Empty<string>();
 
+        logger.LogTrace("Getting column metadata for {Name}", layer.Name);
         var columnsMeta = GetColumnsMeta();
         var geometryColumn = columnsMeta.FirstOrDefault(c => c.NpgsqlDbType == NpgsqlDbType.Geometry);
         if (geometryColumn == null)
-            throw new Exception($"Cannot find a geometry column for table {table}");
+            throw new Exception($"Cannot find a geometry column for table {schema}.{table}");
         geom = geometryColumn.ColumnName;
         geometryType = layer.GeometryType;
+        logger.LogTrace("Found geometry column with name {geom} and type {geometryType}", geom, geometryType);
         foreach (var column in extraColumns)
         {
             var columnMeta = columnsMeta.FirstOrDefault(c => c.ColumnName == column);
@@ -144,6 +172,7 @@ public class PostgreSQLSource : IDataSource
                 throw new Exception($"Unknown column type for {column} in {table}");
             extraColumnsSet.Add(column, columnMeta.NpgsqlDbType.Value);
         }
+        logger.LogTrace("Found {Length} other columns", extraColumns.Length);
         return this;
     }
 }

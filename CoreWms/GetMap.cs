@@ -102,7 +102,7 @@ public class GetMap : Request
         var stopwatch = Stopwatch.StartNew();
         await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, renderer.Tolerance))
             renderer.Draw(ref serverLayer, f);
-        logger.LogTrace("Rendered layer {layer} ({ElapsedMilliseconds} ms)", layer, stopwatch.ElapsedMilliseconds);
+        logger.LogTrace("Fetched data and rendered layer {layer} ({ElapsedMilliseconds} ms)", layer, stopwatch.ElapsedMilliseconds);
 
         return renderer;
     }

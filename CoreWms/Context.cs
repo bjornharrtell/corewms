@@ -84,6 +84,8 @@ public class Context : IContext
         {
             Name = name,
             Title = configLayer.Title,
+            Where = configLayer.Where,
+            Extent = configLayer.Extent,
             Rules = CreateRules(name),
             GeometryType = geometryType
         };

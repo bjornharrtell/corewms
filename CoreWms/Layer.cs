@@ -29,6 +29,8 @@ public struct Layer
     public string Name { get; init; }
     public string Title { get; init; }
     public string Schema { get; init; }
+    public string Where { get; init; }
+    public double[] Extent { get; init; }
     public Type GeometryType { get; init; }
     public Rule[] Rules { get; init; }
     public IDataSource DataSource { get; set; }
