@@ -1,5 +1,6 @@
 using System.Xml.Serialization;
 using CoreWms.Ogc.Fes;
+using NetTopologySuite.Features;
 using Xunit;
 
 namespace CoreWms.UnitTests;
@@ -7,7 +8,7 @@ namespace CoreWms.UnitTests;
 public class FesTests
 {
     [Fact]
-    public async Task PropertyIsEqualToTest()
+    public void PropertyIsEqualToTest()
     {
         var xml = @"
 <Filter>
@@ -21,14 +22,15 @@ public class FesTests
         var reader = new StringReader(xml);
         if (serializer.Deserialize(reader) is not Filter filter)
             throw new Exception("Content not deserialized to Filter");
-        Assert.Collection(filter.PropertyIsEqualTo, e => Assert.Equal("New York", e.Literal.Text));
+        Assert.Collection(filter.PredicateOps, e => Assert.IsType<PropertyIsEqualTo>(e));
 
-        Assert.True(filter.Evaluate("New York"));
-        Assert.True(!filter.Evaluate("Naw York"));
+        Assert.True(filter.Evaluate(new Feature(null, new AttributesTable { { "NAME", "New York" } } )));
+        Assert.False(filter.Evaluate(new Feature(null, new AttributesTable { { "NOME", "New York" } } )));
+        Assert.False(filter.Evaluate(new Feature(null, new AttributesTable { { "NAME", "Naw York" } } )));
     }
 
     [Fact]
-    public async Task PropertyMultipleIsEqualToTest()
+    public void PropertyMultipleIsEqualToTest()
     {
         var xml = @"
 <Filter>
@@ -46,14 +48,25 @@ public class FesTests
         var reader = new StringReader(xml);
         if (serializer.Deserialize(reader) is not Filter filter)
             throw new Exception("Content not deserialized to Filter");
-        Assert.Collection(filter.PropertyIsEqualTo,
-                e => Assert.Equal("New York", e.Literal.Text),
-                e => Assert.Equal("City", e.Literal.Text)
+        Assert.Collection(filter.PredicateOps,
+                e => Assert.IsType<PropertyIsEqualTo>(e),
+                e => Assert.IsType<PropertyIsEqualTo>(e)
         );
+        Assert.True(filter.Evaluate(new Feature(null, new AttributesTable {
+            { "NAME", "New York" },
+            { "CAT", "City" },
+        } )));
+        Assert.False(filter.Evaluate(new Feature(null, new AttributesTable {
+            { "NAME", "New York" }
+        } )));
+        Assert.False(filter.Evaluate(new Feature(null, new AttributesTable {
+            { "NAME", "New York" },
+            { "CAT", "City1" },
+        } )));
     }
 
     [Fact]
-    public async Task PropertyAndTest()
+    public void PropertyAndTest()
     {
         var xml = @"
 <Filter>
@@ -73,10 +86,11 @@ public class FesTests
         var reader = new StringReader(xml);
         if (serializer.Deserialize(reader) is not Filter filter)
             throw new Exception("Content not deserialized to Filter");
-        Assert.Collection(filter.And,
-            e => Assert.Collection(e.PropertyIsEqualTo,
-                e => Assert.Equal("New York", e.Literal.Text),
-                e => Assert.Equal("City", e.Literal.Text))
-        );
+        Assert.Collection(filter.PredicateOps, e => Assert.IsType<And>(e));
+
+        Assert.True(filter.Evaluate(new Feature(null, new AttributesTable {
+            { "NAME", "New York" },
+            { "CAT", "City" },
+        } )));
     }
 }

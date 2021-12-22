@@ -150,9 +150,9 @@ public class PostgreSQLSource : IDataSource
         where = layer.Where;
         if (layer.Extent != null)
             envelope = new Envelope(layer.Extent[0], layer.Extent[2], layer.Extent[1], layer.Extent[3]);
-        //if (layer.Rules != null)
-        //    extraColumns = new HashSet<string>(layer.Rules.Select(r => r.Filters.FirstOrDefault().PropertyName).Where(pn => !string.IsNullOrEmpty(pn))).ToArray();
-        //else
+        if (layer.Rules != null)
+            extraColumns = new HashSet<string>(layer.Rules.SelectMany(r => r.Filter?.GetRequiredPropertyNames() ?? Array.Empty<string>())).ToArray();
+        else
             extraColumns = Array.Empty<string>();
 
         logger.LogTrace("Getting column metadata for {Name}", layer.Name);

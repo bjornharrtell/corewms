@@ -20,23 +20,6 @@ public class LayerRenderer
 
     public double Tolerance => 0.5f * rx;
 
-    Symbolizer defaultSymbolizer = new()
-    {
-        Fill = new Option<SKPaint>(new SKPaint
-        {
-            Color = new SKColor(0, 0, 255, 150),
-            Style = SKPaintStyle.Fill,
-            IsAntialias = true
-        }),
-        Stroke = new Option<SKPaint>(new SKPaint
-        {
-            Color = new SKColor(0, 0, 255, 255),
-            StrokeWidth = 1.2f,
-            Style = SKPaintStyle.Stroke,
-            IsAntialias = true
-        })
-    };
-
     public LayerRenderer(int width, int height, Envelope e)
     {
         this.height = height;
@@ -52,26 +35,11 @@ public class LayerRenderer
 
     public void Draw(ref Layer l, IFeature f)
     {
-        int i;
-        for (i = 0; i < l.Rules.Length; i++)
-        {
-            /*int j;
-            for (j = 0; j < l.Rules[i].Filters.Length; j++)
-            {
-                var literal = Convert.ToInt32(l.Rules[i].Filters[j].Literal);
-                var value = Convert.ToInt32(f.Attributes[l.Rules[i].Filters[j].PropertyName]);
-                if (literal == value)
-                    for (int k = 0; k < l.Rules[i].Symbolizers.Length; k++)
-                        Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
-            }
-            // no filters draw all symbolizers
-            if (j == 0)*/
-            for (int k = 0; k < l.Rules[i].Symbolizers.Length; k++)
-                Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
-        }
-        // not drawn by any rule so draw with default symbolizer
-        if (i == 0)
-            Draw(f.Geometry, ref defaultSymbolizer);
+        if (l.Rules != null)
+            foreach (var rule in l.Rules)
+                if (rule.Filter == null || rule.Filter.Evaluate(f))
+                    for (int k = 0; k < rule.Symbolizers?.Length; k++)
+                        Draw(f.Geometry, ref rule.Symbolizers[k]);
     }
 
     public void Draw(Geometry g, ref Symbolizer symbolizer)
@@ -103,14 +71,14 @@ public class LayerRenderer
     public void Draw(Polygon p, SKPath path)
     {
         TransformToPath(p.ExteriorRing, path);
-        for (int i = 0; i < p.InteriorRings.Length; i++)
-            TransformToPath(p.InteriorRings[i], path);
+        foreach (var r in p.InteriorRings)
+            TransformToPath(r, path);
     }
 
     public void Draw(MultiPolygon mp, ref Symbolizer symbolizer)
     {
-        for (int i = 0; i < mp.Geometries.Length; i++)
-            if (mp.Geometries[i] is Polygon p)
+        foreach (var g in mp.Geometries)
+            if (g is Polygon p)
                 Draw(p, ref symbolizer);
     }
 
@@ -127,8 +95,8 @@ public class LayerRenderer
     public void Draw(MultiLineString mls, ref Symbolizer symbolizer)
     {
         var path = new SKPath();
-        for (int i = 0; i < mls.Geometries.Length; i++)
-            if (mls[i] is LineString ls)
+        foreach (var g in mls.Geometries)
+            if (g is LineString ls)
                 TransformToPath(ls, path);
         Draw(path, ref symbolizer);
     }
@@ -154,10 +122,10 @@ public class LayerRenderer
 
     private void Draw(SKPath path, ref Symbolizer symbolizer)
     {
-        if (symbolizer.Fill.IsSome)
-            DrawFill(path, symbolizer.Fill.Value);
-        if (symbolizer.Stroke.IsSome)
-            canvas.DrawPath(path, symbolizer.Stroke.Value);
+        if (symbolizer.Fill != null)
+            DrawFill(path, symbolizer.Fill);
+        if (symbolizer.Stroke != null)
+            canvas.DrawPath(path, symbolizer.Stroke);
     }
 
     private float ToScreenX(double x) => (float)((x - ox) / rx);

@@ -1,37 +1,18 @@
-#nullable disable
 using System.Xml.Serialization;
+using NetTopologySuite.Features;
 
 namespace CoreWms.Ogc.Fes;
 
-public class PropertyName
+public readonly struct PropertyName
 {
     [XmlText]
-    public string Text;
+    public string Text { get; init; }
 }
 
-public class Literal
+public readonly struct Literal
 {
-    private string _text;
-    private object _parsedValue;
-
     [XmlText]
-    public string Text
-    {
-        get
-        {
-            return _text;
-        }
-        set
-        {
-            _text = value;
-            if (Int32.TryParse(_text, out int parsedInt))
-                _parsedValue = parsedInt;
-            else
-                _parsedValue = _text;
-        }
-    }
-
-    public object ParsedValue { get { return _parsedValue; } }
+    public string Text { get; init; }
 }
 
 public abstract class LogicOpsType : FilterPredicates { }
@@ -40,51 +21,64 @@ public class And : LogicOpsType {}
 
 public class Or : LogicOpsType
 {
-    public new bool Evaluate(object value)
-    {
-        return
-            PropertyIsEqualTo.All(p => p.Evaluate(value)) ||
-            PropertyIsNotEqualTo.All(p => p.Evaluate(value)) ||
-            And.All(p => p.Evaluate(value)) ||
-            Or.All(p => p.Evaluate(value));
-    }
+    public override bool Evaluate(IFeature f) =>
+        PredicateOps?.Any(o => o.Evaluate(f)) ?? false;
 }
 
-public abstract class ComparisonOpsType
+public abstract class PredicateOpsType
+{
+    public abstract bool Evaluate(IFeature f);
+    public abstract string[] GetRequiredPropertyNames();
+}
+
+public abstract class ComparisonOpsType : PredicateOpsType
 {
     public PropertyName PropertyName;
     public Literal Literal;
 
-    public abstract bool Evaluate(object value);
+    public override string[] GetRequiredPropertyNames()
+    {
+        return new string[] { PropertyName.Text };
+    }
 }
 
 public class PropertyIsEqualTo : ComparisonOpsType
 {
-    public override bool Evaluate(object value) => Literal.ParsedValue.Equals(value);
+    public override bool Evaluate(IFeature f)
+    {
+        var value = f.Attributes.GetOptionalValue(PropertyName.Text);
+        if (value == null)
+            return false;
+        else
+            return Literal.Text == Convert.ToString(value);
+    }
 }
 public class PropertyIsNotEqualTo : ComparisonOpsType
 {
-    public override bool Evaluate(object value) => !Literal.ParsedValue.Equals(value);
+    public override bool Evaluate(IFeature f)
+    {
+        var value = f.Attributes.GetOptionalValue(PropertyName.Text);
+        if (value == null)
+            return false;
+        else
+            return Literal.Text != Convert.ToString(value);
+    }
 }
 
-public class FilterPredicates
+public class FilterPredicates : PredicateOpsType
 {
-    [XmlElement("PropertyIsEqualTo")]
-    public PropertyIsEqualTo[] PropertyIsEqualTo;
-    [XmlElement("PropertyIsNotEqualTo")]
-    public PropertyIsNotEqualTo[] PropertyIsNotEqualTo;
-    [XmlElement("And")]
-    public And[] And;
-    [XmlElement("Or")]
-    public Or[] Or;
+    [XmlElement("PropertyIsEqualTo", Type = typeof(PropertyIsEqualTo))]
+    [XmlElement("PropertyIsNotEqualTo", Type = typeof(PropertyIsNotEqualTo))]
+    [XmlElement("And", Type = typeof(And))]
+    [XmlElement("Or", Type = typeof(Or))]
+    public PredicateOpsType[]? PredicateOps;
 
-    public bool Evaluate(object value)
+    public override bool Evaluate(IFeature f) =>
+        PredicateOps?.All(op => op.Evaluate(f)) ?? false;
+
+    public override string[] GetRequiredPropertyNames()
     {
-        return
-            (PropertyIsEqualTo?.All(p => p.Evaluate(value)) ?? true) &&
-            (PropertyIsNotEqualTo?.All(p => p.Evaluate(value)) ?? true) &&
-            (And?.All(p => p.Evaluate(value)) ?? true) &&
-            (Or?.All(p => p.Evaluate(value)) ?? true);
+        return PredicateOps?.SelectMany(op => op.GetRequiredPropertyNames()).ToArray() ?? Array.Empty<string>();
     }
 }
 

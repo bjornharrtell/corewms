@@ -1,5 +1,4 @@
 using System.Xml.Serialization;
-using CoreWms.Ogc.Fes;
 using CoreWms.Ogc.Sld;
 using SkiaSharp;
 
@@ -23,7 +22,7 @@ static class SldHelpers
         );
     }
 
-    static SKPathEffect? CreatePathEffect(string wellKnownName, float width, float size)
+    static SKPathEffect? CreatePathEffect(string? wellKnownName, float width, float size)
     {
         if (string.IsNullOrEmpty(wellKnownName))
             return null;
@@ -33,7 +32,7 @@ static class SldHelpers
             "shape://horline" => CreateLines(0, width, size),
             "shape://slash" => CreateLines(-45, width, size),
             "shape://backslash" => CreateLines(45, width, size),
-            _ => throw new System.Exception($"Unsupported symbol ${wellKnownName}"),
+            _ => throw new Exception($"Unsupported symbol ${wellKnownName}"),
         };
     }
 
@@ -41,33 +40,39 @@ static class SldHelpers
     {
         var serializer = new XmlSerializer(typeof(StyledLayerDescriptor));
         if (serializer.Deserialize(stream) is not StyledLayerDescriptor sld)
-            throw new System.Exception("Unexpected error deserializing SLD document");
+            throw new Exception("Unexpected error deserializing SLD document");
         return sld;
     }
 
-    static Option<SKPaint> ToPaint(Ogc.Se.Fill fill)
+    static SKPaint? ToPaint(Ogc.Se.Fill? fill)
     {
         if (fill == null || fill.GraphicFill == null)
-            return new Option<SKPaint>();
-        var graphic = fill.GraphicFill.Graphic;
+            return null;
+        var graphic = fill.GraphicFill.Value.Graphic;
+        if (graphic == null)
+            return null;
         var size = graphic.Size;
+        if (graphic.Mark == null)
+            return null;
         var mark = graphic.Mark.First();
+        if (mark.Stroke == null || mark.Stroke.SvgParameter == null)
+            return null;
         var strokeColor = mark.Stroke.SvgParameter.First(p => p.name == "stroke").Text;
-        var strokeWidth = float.Parse(mark.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text);
-        return new Option<SKPaint>(new SKPaint()
+        var strokeWidth = float.Parse(mark.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text ?? "1");
+        return new SKPaint()
         {
             Style = SKPaintStyle.Stroke,
             PathEffect = CreatePathEffect(mark.WellKnownName, strokeWidth, size / 1.5f),
             Color = SKColor.Parse(strokeColor),
             StrokeWidth = strokeWidth * 1.5f,
             IsAntialias = true
-        });
+        };
     }
 
     static Symbolizer ConvertSymbolizer(Ogc.Se.Symbolizer s)
     {
-        var strokeColor = s.Stroke.SvgParameter.First(p => p.name == "stroke").Text;
-        var strokeWidth = s.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text;
+        var strokeColor = s.Stroke?.SvgParameter?.First(p => p.name == "stroke").Text ?? "#000000";
+        var strokeWidth = s.Stroke?.SvgParameter?.First(p => p.name == "stroke-width").Text ?? "1";
         var stroke = new SKPaint
         {
             Style = SKPaintStyle.Stroke,
@@ -77,45 +82,28 @@ static class SldHelpers
         };
         return new Symbolizer()
         {
-            Stroke = new Option<SKPaint>(stroke),
+            Stroke = stroke,
             Fill = ToPaint(s.Fill)
         };
     }
 
-    /*static EqualsTo ConvertFilter(Ogc.Fes.Filter f)
-    {
-        // TODO: support other types of filters
-        var propertyIsEqualTo = f.PropertyIsEqualTo.First() as PropertyIsEqualTo;
-        var literalText = propertyIsEqualTo.Literal.Text;
-        object literal;
-        if (float.TryParse(literalText, out float literalFloat))
-            literal = (short)literalFloat;
-        else
-            literal = literalText;
-        return new EqualsTo()
-        {
-            PropertyName = propertyIsEqualTo.PropertyName.Text,
-            Literal = literal
-        };
-    }*/
-
     static Rule ConvertRule(Ogc.Se.Rule seRule)
     {
-        var symbolizers = seRule.Symbolizer.Select(ConvertSymbolizer).ToArray();
-        //var filters = seRule.Filter.Select(ConvertFilter).ToArray();
+        var symbolizers = seRule.Symbolizer?.Select(ConvertSymbolizer).ToArray();
+        var filter = seRule.Filter;
 
         return new Rule()
         {
             Symbolizers = symbolizers,
-            //Filters = filters
+            Filter = filter
         };
     }
 
-    static public Rule[] ToCoreWmsRules(StyledLayerDescriptor sld)
+    static public Rule[]? ToCoreWmsRules(StyledLayerDescriptor sld)
     {
-        var userStyle = sld.NamedLayer.First().UserStyle.First();
-        var featureTypeStyle = userStyle.FeatureTypeStyle.First();
-        var rules = featureTypeStyle.Rule.Select(ConvertRule);
-        return rules.ToArray();
+        var userStyle = sld.NamedLayer?.First()?.UserStyle?.First();
+        var featureTypeStyle = userStyle?.FeatureTypeStyle?.First();
+        var rules = featureTypeStyle?.Rule?.Select(ConvertRule);
+        return rules?.ToArray();
     }
 }

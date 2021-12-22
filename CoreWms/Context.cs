@@ -31,7 +31,7 @@ public class Context : IContext
             .ToDictionary(l => l.Name);
     }
 
-    Rule[] CreateRules(string name)
+    Rule[]? CreateRules(string name)
     {
         var filePath = Path.Join("sld", name) + ".sld";
         try
