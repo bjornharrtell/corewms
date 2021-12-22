@@ -146,13 +146,13 @@ public class PostgreSQLSource : IDataSource
         logger.LogTrace("Configuring {Name}", layer.Name);
         connectionString = dataSource.ConnectionString;
         schema = dataSource.Schema;
-        table = layer.Name;
+        table = layer.Table ?? layer.Name;
         where = layer.Where;
-        if (layer.Extent != null) 
+        if (layer.Extent != null)
             envelope = new Envelope(layer.Extent[0], layer.Extent[2], layer.Extent[1], layer.Extent[3]);
-        if (layer.Rules != null)
-            extraColumns = new HashSet<string>(layer.Rules.Select(r => r.Filters.FirstOrDefault().PropertyName).Where(pn => !string.IsNullOrEmpty(pn))).ToArray();
-        else
+        //if (layer.Rules != null)
+        //    extraColumns = new HashSet<string>(layer.Rules.Select(r => r.Filters.FirstOrDefault().PropertyName).Where(pn => !string.IsNullOrEmpty(pn))).ToArray();
+        //else
             extraColumns = Array.Empty<string>();
 
         logger.LogTrace("Getting column metadata for {Name}", layer.Name);

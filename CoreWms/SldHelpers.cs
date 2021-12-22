@@ -82,10 +82,10 @@ static class SldHelpers
         };
     }
 
-    static EqualsTo ConvertFilter(Ogc.Fes.Filter f)
+    /*static EqualsTo ConvertFilter(Ogc.Fes.Filter f)
     {
         // TODO: support other types of filters
-        var propertyIsEqualTo = f.ComparisonOps.First() as PropertyIsEqualTo;
+        var propertyIsEqualTo = f.PropertyIsEqualTo.First() as PropertyIsEqualTo;
         var literalText = propertyIsEqualTo.Literal.Text;
         object literal;
         if (float.TryParse(literalText, out float literalFloat))
@@ -97,17 +97,17 @@ static class SldHelpers
             PropertyName = propertyIsEqualTo.PropertyName.Text,
             Literal = literal
         };
-    }
+    }*/
 
     static Rule ConvertRule(Ogc.Se.Rule seRule)
     {
         var symbolizers = seRule.Symbolizer.Select(ConvertSymbolizer).ToArray();
-        var filters = seRule.Filter.Select(ConvertFilter).ToArray();
+        //var filters = seRule.Filter.Select(ConvertFilter).ToArray();
 
         return new Rule()
         {
             Symbolizers = symbolizers,
-            Filters = filters
+            //Filters = filters
         };
     }
 

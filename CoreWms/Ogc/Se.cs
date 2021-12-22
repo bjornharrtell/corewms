@@ -1,6 +1,6 @@
 #nullable disable
 using System.Xml.Serialization;
-using CoreWms.Ogc.Fes;
+//using CoreWms.Ogc.Fes;
 
 namespace CoreWms.Ogc.Se;
 
@@ -62,8 +62,8 @@ public class Rule
     [XmlElement("LineSymbolizer", Type = typeof(LineSymbolizer))]
     [XmlElement("PolygonSymbolizer", Type = typeof(PolygonSymbolizer))]
     public List<Symbolizer> Symbolizer;
-    [XmlElement(Namespace = "http://www.opengis.net/ogc")]
-    public List<Filter> Filter;
+    //[XmlElement(Namespace = "http://www.opengis.net/ogc")]
+    //public List<Filter> Filter;
 }
 
 public class FeatureTypeStyle

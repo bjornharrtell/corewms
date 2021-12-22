@@ -84,6 +84,7 @@ public class Context : IContext
         {
             Name = name,
             Title = configLayer.Title,
+            Table = configLayer.Table,
             Where = configLayer.Where,
             Extent = configLayer.Extent,
             Rules = CreateRules(name),

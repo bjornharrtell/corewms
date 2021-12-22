@@ -55,10 +55,9 @@ public class LayerRenderer
         int i;
         for (i = 0; i < l.Rules.Length; i++)
         {
-            int j;
+            /*int j;
             for (j = 0; j < l.Rules[i].Filters.Length; j++)
             {
-                // TODO: this isn't nice... and might cause duplicate draws
                 var literal = Convert.ToInt32(l.Rules[i].Filters[j].Literal);
                 var value = Convert.ToInt32(f.Attributes[l.Rules[i].Filters[j].PropertyName]);
                 if (literal == value)
@@ -66,9 +65,9 @@ public class LayerRenderer
                         Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
             }
             // no filters draw all symbolizers
-            if (j == 0)
-                for (int k = 0; k < l.Rules[i].Symbolizers.Length; k++)
-                    Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
+            if (j == 0)*/
+            for (int k = 0; k < l.Rules[i].Symbolizers.Length; k++)
+                Draw(f.Geometry, ref l.Rules[i].Symbolizers[k]);
         }
         // not drawn by any rule so draw with default symbolizer
         if (i == 0)
