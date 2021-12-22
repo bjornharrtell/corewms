@@ -64,11 +64,11 @@ public class LayerRenderer
     public void Draw(Polygon p, ref Symbolizer symbolizer)
     {
         var path = new SKPath();
-        Draw(p, path);
+        TransformToPath(p, path);
         Draw(path, ref symbolizer);
     }
 
-    public void Draw(Polygon p, SKPath path)
+    private void TransformToPath(Polygon p, SKPath path)
     {
         TransformToPath(p.ExteriorRing, path);
         foreach (var r in p.InteriorRings)
@@ -82,7 +82,7 @@ public class LayerRenderer
                 Draw(p, ref symbolizer);
     }
 
-    public void TransformToPath(LineString ls, SKPath path)
+    private void TransformToPath(LineString ls, SKPath path)
     {
         var cs = ls.CoordinateSequence;
         for (int i = 0; i < cs.Count; i++)

@@ -22,7 +22,6 @@ public struct Layer
     public string Title { get; init; }
     public string Schema { get; init; }
     public string Table { get; init; }
-    public string Where { get; init; }
     public double[] Extent { get; init; }
     public Type GeometryType { get; init; }
     public Rule[]? Rules { get; init; }

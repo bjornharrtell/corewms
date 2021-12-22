@@ -3,7 +3,7 @@ using CoreWms.Ogc.Fes;
 
 namespace CoreWms.Ogc.Se;
 
-public class SvgParameter
+public class CssParameter
 {
     [XmlAttribute]
     public string? name;
@@ -32,12 +32,14 @@ public readonly struct GraphicFill
 public class Fill
 {
     public GraphicFill? GraphicFill;
+    [XmlElement]
+    public CssParameter[]? CssParameter;
 }
 
 public class Stroke
 {
     [XmlElement]
-    public SvgParameter[]? SvgParameter;
+    public CssParameter[]? CssParameter;
 }
 
 public class LineSymbolizer : Symbolizer

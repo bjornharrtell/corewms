@@ -46,24 +46,34 @@ static class SldHelpers
 
     static SKPaint? ToPaint(Ogc.Se.Fill? fill)
     {
-        if (fill == null || fill.GraphicFill == null)
+        if (fill == null)
             return null;
-        var graphic = fill.GraphicFill.Value.Graphic;
-        if (graphic == null)
-            return null;
-        var size = graphic.Size;
-        if (graphic.Mark == null)
-            return null;
-        var mark = graphic.Mark.First();
-        if (mark.Stroke == null || mark.Stroke.SvgParameter == null)
-            return null;
-        var strokeColor = mark.Stroke.SvgParameter.First(p => p.name == "stroke").Text;
-        var strokeWidth = float.Parse(mark.Stroke.SvgParameter.First(p => p.name == "stroke-width").Text ?? "1");
+        var graphic = fill.GraphicFill?.Graphic;
+        SKColor color = SKColor.Parse("#000000");
+        SKPaintStyle paintStyle = SKPaintStyle.Fill;
+
+        SKPathEffect? pathEffect = null;
+        float strokeWidth = 0;
+        if (graphic != null && graphic.Mark != null)
+        {
+            var size = graphic.Size;
+            var mark = graphic.Mark.First();
+            color = SKColor.Parse(mark.Stroke?.CssParameter?.First(p => p.name == "stroke").Text);
+            strokeWidth = float.Parse(mark.Stroke?.CssParameter?.First(p => p.name == "stroke-width").Text ?? "1");
+            pathEffect = CreatePathEffect(mark.WellKnownName, strokeWidth, size / 1.5f);
+            paintStyle = SKPaintStyle.Stroke;
+        }
+        var fillParam = fill.CssParameter?.FirstOrDefault(p => p.name == "fill");
+        if (fillParam != null)
+            color = SKColor.Parse(fillParam.Text);
+        var fillOpacity = fill.CssParameter?.FirstOrDefault(p => p.name == "fill-opacity");
+        byte alpha = (byte) (float.Parse(fillOpacity?.Text ?? "1") * 255);
+
         return new SKPaint()
         {
-            Style = SKPaintStyle.Stroke,
-            PathEffect = CreatePathEffect(mark.WellKnownName, strokeWidth, size / 1.5f),
-            Color = SKColor.Parse(strokeColor),
+            Style = paintStyle,
+            PathEffect = pathEffect,
+            Color = color.WithAlpha(alpha),
             StrokeWidth = strokeWidth * 1.5f,
             IsAntialias = true
         };
@@ -71,15 +81,20 @@ static class SldHelpers
 
     static Symbolizer ConvertSymbolizer(Ogc.Se.Symbolizer s)
     {
-        var strokeColor = s.Stroke?.SvgParameter?.First(p => p.name == "stroke").Text ?? "#000000";
-        var strokeWidth = s.Stroke?.SvgParameter?.First(p => p.name == "stroke-width").Text ?? "1";
-        var stroke = new SKPaint
+        SKPaint? stroke = null;
+        if (s.Stroke != null)
         {
-            Style = SKPaintStyle.Stroke,
-            Color = SKColor.Parse(strokeColor),
-            StrokeWidth = float.Parse(strokeWidth) * 1.5f,
-            IsAntialias = true,
-        };
+            var strokeColor = s.Stroke.CssParameter?.First(p => p.name == "stroke").Text ?? "#000000";
+            var strokeWidth = s.Stroke.CssParameter?.First(p => p.name == "stroke-width").Text ?? "1";
+            byte alpha = (byte) (float.Parse(s.Stroke.CssParameter?.First(p => p.name == "stroke-opacity").Text ?? "1") * 255);
+            stroke = new SKPaint
+            {
+                Style = SKPaintStyle.Stroke,
+                Color = SKColor.Parse(strokeColor).WithAlpha(alpha),
+                StrokeWidth = float.Parse(strokeWidth) * 1.5f,
+                IsAntialias = true,
+            };
+        }
         return new Symbolizer()
         {
             Stroke = stroke,

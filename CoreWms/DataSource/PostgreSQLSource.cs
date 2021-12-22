@@ -17,7 +17,6 @@ public class PostgreSQLSource : IDataSource
     string? connectionString;
     string? schema;
     string? table;
-    string? where;
     Envelope? envelope;
 
     string[]?extraColumns;
@@ -67,7 +66,7 @@ public class PostgreSQLSource : IDataSource
         return this.srid.Value;
     }
 
-    IEnumerable<NpgsqlDbColumn> GetColumnsMeta()
+    string GetGeometryName()
     {
         var sql = $"select * from {schema}.{table} limit 1";
         logger.LogTrace("SQL: {sql}", sql);
@@ -75,19 +74,39 @@ public class PostgreSQLSource : IDataSource
         conn.Open();
         using var cmd = new NpgsqlCommand(sql, conn);
         using var reader = cmd.ExecuteReader();
-        var columns = reader.GetColumnSchema();
+        var columnsSchema = reader.GetColumnSchema();
+        var geometryColumn = columnsSchema.FirstOrDefault(c => c.NpgsqlDbType == NpgsqlDbType.Geometry);
+        if (geometryColumn == null)
+            throw new Exception($"Cannot find a geometry column for table {schema}.{table}");
+        return geometryColumn.ColumnName;
+    }
+
+    IEnumerable<NpgsqlDbColumn> GetColumnsMeta()
+    {
+        var columns = GenerateSelect(geom ?? "");
+        var sql = $"select {columns} from {schema}.{table} limit 1";
+        logger.LogTrace("SQL: {sql}", sql);
+        using var conn = new NpgsqlConnection(connectionString);
+        conn.Open();
+        using var cmd = new NpgsqlCommand(sql, conn);
+        using var reader = cmd.ExecuteReader();
+        var columnsSchema = reader.GetColumnSchema();
+        return columnsSchema;
+    }
+
+    private string GenerateSelect(string geomColumn) {
+        var columnsList = new List<string>() { geomColumn };
+        if (extraColumns != null)
+            columnsList.AddRange(extraColumns);
+        var columns = string.Join(", ", columnsList);
         return columns;
     }
 
     public async IAsyncEnumerable<IFeature> FetchAsync(Envelope e, double tolerance = 0)
     {
         var srid = GetEPSGCode();
-        var columnsList = new List<string>();
         var geomColumn = tolerance > 0 ? $"st_snaptogrid(st_force2d({geom}), {tolerance}, {tolerance}) geom" : $"st_force2d({geom}) geom";
-        columnsList.Add(geomColumn);
-        if (extraColumns != null)
-            columnsList.AddRange(extraColumns);
-        var columns = string.Join(", ", columnsList);
+        var columns = GenerateSelect(geomColumn);
         await using var conn = new NpgsqlConnection(connectionString);
         await conn.OpenAsync();
         var whereGeomFilter = $"st_intersects({geom}, st_makeenvelope({e.MinX}, {e.MinY}, {e.MaxX}, {e.MaxY}, {srid}))";
@@ -96,8 +115,6 @@ public class PostgreSQLSource : IDataSource
             whereClauses.Add($"st_area({geom}) > {tolerance}");
         else if (typeof(ILineal).IsAssignableFrom(geometryType))
             whereClauses.Add($"st_length({geom}) > {tolerance}");
-        if (!string.IsNullOrEmpty(this.where))
-            whereClauses.Add(this.where);
         var where = string.Join(" and ", whereClauses);
         var select = $"select {columns} from {schema}.{table} where {where}";
         var sql = $"copy ({select}) to stdout (format binary)";
@@ -147,7 +164,6 @@ public class PostgreSQLSource : IDataSource
         connectionString = dataSource.ConnectionString;
         schema = dataSource.Schema;
         table = layer.Table ?? layer.Name;
-        where = layer.Where;
         if (layer.Extent != null)
             envelope = new Envelope(layer.Extent[0], layer.Extent[2], layer.Extent[1], layer.Extent[3]);
         if (layer.Rules != null)
@@ -156,11 +172,8 @@ public class PostgreSQLSource : IDataSource
             extraColumns = Array.Empty<string>();
 
         logger.LogTrace("Getting column metadata for {Name}", layer.Name);
+        geom = GetGeometryName();
         var columnsMeta = GetColumnsMeta();
-        var geometryColumn = columnsMeta.FirstOrDefault(c => c.NpgsqlDbType == NpgsqlDbType.Geometry);
-        if (geometryColumn == null)
-            throw new Exception($"Cannot find a geometry column for table {schema}.{table}");
-        geom = geometryColumn.ColumnName;
         geometryType = layer.GeometryType;
         logger.LogTrace("Found geometry column with name {geom} and type {geometryType}", geom, geometryType);
         foreach (var column in extraColumns)
