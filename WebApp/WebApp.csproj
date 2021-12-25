@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ContentWithTargetPath Include="../TestData/**">
+    <ContentWithTargetPath Include="sld/**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>TestData/%(RecursiveDir)/%(Filename)%(Extension)</TargetPath>
+      <TargetPath>sld/%(RecursiveDir)/%(Filename)%(Extension)</TargetPath>
     </ContentWithTargetPath>
   </ItemGroup>
 

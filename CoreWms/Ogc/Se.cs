@@ -64,6 +64,8 @@ public class Rule
     [XmlElement("PolygonSymbolizer", Type = typeof(PolygonSymbolizer))]
     public Symbolizer[]? Symbolizer;
     public Filter? Filter;
+    public string? MinScaleDenominator;
+    public string? MaxScaleDenominator;
 }
 
 public class FeatureTypeStyle

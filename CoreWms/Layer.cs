@@ -14,6 +14,8 @@ public readonly struct Rule
 {
     public Filter? Filter { get; init; }
     public Symbolizer[]? Symbolizers { get; init; }
+    public double? MinResolution { get; init; }
+    public double? MaxResolution { get; init; }
 }
 
 public struct Layer
@@ -26,4 +28,5 @@ public struct Layer
     public Type GeometryType { get; init; }
     public Rule[]? Rules { get; init; }
     public IDataSource DataSource { get; set; }
+    public double? MaxResolution { get; set; }
 }

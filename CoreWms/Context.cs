@@ -15,6 +15,8 @@ public class Context : IContext
 
     public IReadOnlyDictionary<string, Layer> Layers { get; }
 
+    public IConfig Config { get { return config; } }
+
     public Context(ILogger<Context> logger, IConfig config, IServiceProvider serviceProvider)
     {
         this.logger = logger;
@@ -90,6 +92,14 @@ public class Context : IContext
             GeometryType = geometryType
         };
         layer.DataSource = CreateDataSource(configLayer, layer);
+        if (layer.Rules != null)
+        {
+            var maxResolution = layer.Rules
+                .Where(r => r.MaxResolution != null)
+                .Select(r => r.MaxResolution)
+                .Max();
+            layer.MaxResolution = maxResolution;
+        }
         return layer;
     }
 }

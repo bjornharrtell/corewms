@@ -22,6 +22,9 @@ public struct GetMapParameters
     public int Width { get; set; }
     public int Height { get; set; }
 
+    public double Resolution => (Bbox.MaxX - Bbox.MinX) / Width;
+    public double Tolerance => 0.5f * Resolution;
+
     public Format Format { get; set; }
 
     public bool Transparent { get; set; }
@@ -83,27 +86,52 @@ public class GetMap : Request
             .Select(l => ProcessLayer(parameters, l));
 
         var stopwatch = Stopwatch.StartNew();
-        var renders = await Task.WhenAll(renderers);
+        var bitmaps = await Task.WhenAll(renderers);
 
         stopwatch = Stopwatch.StartNew();
-        if (renders.Length == 1)
-            renders[0].Bitmap.Encode(stream, SKEncodedImageFormat.Png, 100);
+        if (bitmaps.Length == 1)
+            bitmaps[0].Encode(stream, SKEncodedImageFormat.Png, 100);
         logger.LogTrace("Encoded {Format} ({ElapsedMilliseconds} ms)", parameters.Format, stopwatch.ElapsedMilliseconds);
         // TODO: else blend into single bitmap and encode
     }
 
-    async Task<LayerRenderer> ProcessLayer(GetMapParameters parameters, string layer)
+    private static bool CheckResolution(GetMapParameters p, Rule r)
+    {
+        if (r.MaxResolution != null && p.Resolution > r.MaxResolution)
+            return false;
+        if (r.MinResolution != null && p.Resolution <= r.MinResolution)
+            return false;
+        return true;
+    }
+
+    async Task<SKBitmap> ProcessLayer(GetMapParameters parameters, string layer)
     {
         if (!context.Layers.TryGetValue(layer, out Layer serverLayer))
             throw new LayerNotDefinedException($"Layer {layer} is not defined");
 
-        var renderer = new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox);
+        if (serverLayer.Rules == null || serverLayer.Rules.Length == 0)
+            throw new Exception("Layer has no rules");
+
+        if (parameters.Resolution > serverLayer.MaxResolution)
+        {
+            logger.LogTrace("Layer max resolution {} is lower than requested render resolution {}", serverLayer.MaxResolution, parameters.Resolution);
+            return new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox).Bitmap;
+        }
+
+        var tuples = serverLayer.Rules
+            .Select(r => (Rule: r, Renderer: new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox))).ToArray();
 
         var stopwatch = Stopwatch.StartNew();
-        await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, renderer.Tolerance))
-            renderer.Draw(ref serverLayer, f);
+        await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, parameters.Tolerance))
+            foreach (var t in tuples)
+                if (CheckResolution(parameters, t.Rule) && (t.Rule.Filter == null || t.Rule.Filter.Evaluate(f)))
+                    t.Renderer.Draw(f, t.Rule.Symbolizers);
         logger.LogTrace("Fetched data and rendered layer {layer} ({ElapsedMilliseconds} ms)", layer, stopwatch.ElapsedMilliseconds);
 
-        return renderer;
+        var first = tuples.First().Renderer;
+        foreach (var t in tuples.Skip(1))
+            first.Merge(t.Renderer);
+
+        return first.Bitmap;
     }
 }

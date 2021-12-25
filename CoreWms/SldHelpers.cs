@@ -106,11 +106,19 @@ static class SldHelpers
     {
         var symbolizers = seRule.Symbolizer?.Select(ConvertSymbolizer).ToArray();
         var filter = seRule.Filter;
+        double? minResolution = null;
+        double? maxResolution = null;
+        if (seRule.MinScaleDenominator != null)
+            minResolution = 0.0254 / 90 * int.Parse(seRule.MinScaleDenominator);
+        if (seRule.MaxScaleDenominator != null)
+            maxResolution = 0.0254 / 90 * int.Parse(seRule.MaxScaleDenominator);
 
         return new Rule()
         {
             Symbolizers = symbolizers,
-            Filter = filter
+            Filter = filter,
+            MinResolution = minResolution,
+            MaxResolution = maxResolution
         };
     }
 

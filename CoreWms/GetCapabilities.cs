@@ -74,8 +74,8 @@ public class GetCapabilities
             LayerChildren = context.Layers.Values.Select(l => ToCapabilitiesLayer(l)).ToList()
         };
         capabilities.Capability.Layer = rootLayer;
-        capabilities.Capability.Request.GetCapabilities.DCPType.HTTP.Get.OnlineResource.href = "http://localhost:5000/wms?service=WMS";
-        capabilities.Capability.Request.GetMap.DCPType.HTTP.Get.OnlineResource.href = "http://localhost:5000/wms?service=WMS";
+        capabilities.Capability.Request.GetCapabilities.DCPType.HTTP.Get.OnlineResource.href = context.Config.Host ?? "http://localhost:5000/wms?service=WMS";
+        capabilities.Capability.Request.GetMap.DCPType.HTTP.Get.OnlineResource.href = context.Config.Host ?? "http://localhost:5000/wms?service=WMS";
         return capabilities;
     }
 

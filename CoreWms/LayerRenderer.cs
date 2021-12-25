@@ -18,6 +18,7 @@ public class LayerRenderer
 
     public SKBitmap Bitmap => bitmap;
 
+    public double Resolution => rx;
     public double Tolerance => 0.5f * rx;
 
     public LayerRenderer(int width, int height, Envelope e)
@@ -33,13 +34,15 @@ public class LayerRenderer
         canvas = new SKCanvas(bitmap);
     }
 
-    public void Draw(ref Layer l, IFeature f)
+    public void Merge(LayerRenderer r)
     {
-        if (l.Rules != null)
-            foreach (var rule in l.Rules)
-                if (rule.Filter == null || rule.Filter.Evaluate(f))
-                    for (int k = 0; k < rule.Symbolizers?.Length; k++)
-                        Draw(f.Geometry, ref rule.Symbolizers[k]);
+        canvas.DrawBitmap(r.bitmap, 0f, 0f);
+    }
+
+    public void Draw(IFeature f, Symbolizer[]? symbolizers)
+    {
+        for (int k = 0; k < symbolizers?.Length; k++)
+            Draw(f.Geometry, ref symbolizers[k]);
     }
 
     public void Draw(Geometry g, ref Symbolizer symbolizer)
