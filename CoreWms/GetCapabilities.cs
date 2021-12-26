@@ -84,5 +84,7 @@ public class GetCapabilities
         logger.LogTrace("Streaming cached capabilities XML");
         using var streamWriter = new StreamWriter(stream);
         await streamWriter.WriteAsync(capabilitiesCache);
+        await streamWriter.FlushAsync();
+        await streamWriter.DisposeAsync();
     }
 }

@@ -2,7 +2,6 @@ using CoreWms;
 using CoreWms.Config;
 using CoreWms.DataSource;
 using Microsoft.AspNetCore.Mvc.Formatters;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Npgsql;
 
 NpgsqlConnection.GlobalTypeMapper.UseNetTopologySuite();
@@ -10,8 +9,6 @@ NpgsqlConnection.GlobalTypeMapper.UseNetTopologySuite();
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.AddSimpleConsole();
 builder.Services.AddControllers();
-builder.Services.Configure<IISServerOptions>(o => o.AllowSynchronousIO = true);
-builder.Services.Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);
 
 var config = new Config();
 builder.Configuration.Bind("CoreWms", config);

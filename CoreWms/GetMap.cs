@@ -86,13 +86,17 @@ public class GetMap : Request
             .Select(l => ProcessLayer(parameters, l));
 
         var stopwatch = Stopwatch.StartNew();
-        var bitmaps = await Task.WhenAll(renderers);
+        var renderer = await Task.WhenAll(renderers);
 
         stopwatch = Stopwatch.StartNew();
-        if (bitmaps.Length == 1)
-            bitmaps[0].Encode(stream, SKEncodedImageFormat.Png, 100);
+        // TODO: renderers could be run by concurrent thread pool?
+        SKData data;
+        if (renderers.Count() == 1)
+            data = renderer[0].Bitmap.Encode(SKEncodedImageFormat.Png, 100);
+        else
+            data = renderer.Aggregate((a, b) => a.Merge(b)).Bitmap.Encode(SKEncodedImageFormat.Png, 100);
+        await data.AsStream().CopyToAsync(stream);
         logger.LogTrace("Encoded {Format} ({ElapsedMilliseconds} ms)", parameters.Format, stopwatch.ElapsedMilliseconds);
-        // TODO: else blend into single bitmap and encode
     }
 
     private static bool CheckResolution(GetMapParameters p, Rule r)
@@ -104,7 +108,7 @@ public class GetMap : Request
         return true;
     }
 
-    async Task<SKBitmap> ProcessLayer(GetMapParameters parameters, string layer)
+    async Task<LayerRenderer> ProcessLayer(GetMapParameters parameters, string layer)
     {
         if (!context.Layers.TryGetValue(layer, out Layer serverLayer))
             throw new LayerNotDefinedException($"Layer {layer} is not defined");
@@ -115,16 +119,21 @@ public class GetMap : Request
         if (parameters.Resolution > serverLayer.MaxResolution)
         {
             logger.LogTrace("Layer max resolution {} is lower than requested render resolution {}", serverLayer.MaxResolution, parameters.Resolution);
-            return new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox).Bitmap;
+            return new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox);
         }
 
         var tuples = serverLayer.Rules
-            .Select(r => (Rule: r, Renderer: new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox))).ToArray();
+            .Select(r => (
+                Rule: r,
+                Renderer: new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox),
+                IsVisible: CheckResolution(parameters, r)
+            )).ToArray();
 
         var stopwatch = Stopwatch.StartNew();
+        // TODO: renderers could be run by concurrent thread pool?
         await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, parameters.Tolerance))
             foreach (var t in tuples)
-                if (CheckResolution(parameters, t.Rule) && (t.Rule.Filter == null || t.Rule.Filter.Evaluate(f)))
+                if (t.IsVisible && (t.Rule.Filter?.Evaluate(f) ?? true))
                     t.Renderer.Draw(f, t.Rule.Symbolizers);
         logger.LogTrace("Fetched data and rendered layer {layer} ({ElapsedMilliseconds} ms)", layer, stopwatch.ElapsedMilliseconds);
 
@@ -132,6 +141,6 @@ public class GetMap : Request
         foreach (var t in tuples.Skip(1))
             first.Merge(t.Renderer);
 
-        return first.Bitmap;
+        return first;
     }
 }

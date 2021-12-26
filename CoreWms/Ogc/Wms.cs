@@ -76,7 +76,7 @@ public class Request
     public GetMap GetMap = new();
 }
 
-public class Exception
+public class WmsException
 {
     [XmlElement]
     public List<string> Format = new()
@@ -88,7 +88,8 @@ public class Exception
 public class Capability
 {
     public Request Request = new();
-    public Exception Exception = new();
+    [XmlElement("Exception")]
+    public WmsException Exception = new();
     public Layer Layer;
 }
 

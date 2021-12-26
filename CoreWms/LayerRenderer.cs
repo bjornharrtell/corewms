@@ -34,9 +34,10 @@ public class LayerRenderer
         canvas = new SKCanvas(bitmap);
     }
 
-    public void Merge(LayerRenderer r)
+    public LayerRenderer Merge(LayerRenderer r)
     {
         canvas.DrawBitmap(r.bitmap, 0f, 0f);
+        return this;
     }
 
     public void Draw(IFeature f, Symbolizer[]? symbolizers)
