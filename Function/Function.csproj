@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.0.1" />
+    <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CoreWms/CoreWms.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+    <ContentWithTargetPath Include="sld/**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>sld/%(RecursiveDir)/%(Filename)%(Extension)</TargetPath>
+    </ContentWithTargetPath>
+  </ItemGroup>
+
+  <Target Name="CopyRequiredNativeAssets" AfterTargets="_FunctionsPostPublish">
+    <ItemGroup>
+      <NativeAssetToCopy Include="$(PublishDir)bin/runtimes/linux-x64/native/libSkiaSharp.so" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NativeAssetToCopy)" DestinationFolder="$(PublishDir)bin" />
+  </Target>
+
+</Project>

@@ -35,7 +35,7 @@ public class Context : IContext
 
     Rule[]? CreateRules(string name)
     {
-        var filePath = Path.Join("sld", name) + ".sld";
+        var filePath = Path.Join(config.DataPath ?? "", "sld", name) + ".sld";
         try
         {
             var stream = new FileStream(filePath, FileMode.Open);
