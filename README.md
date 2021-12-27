@@ -3,7 +3,7 @@
 [![CircleCI](https://circleci.com/gh/bjornharrtell/corewms/tree/main.svg?style=svg)](https://circleci.com/gh/bjornharrtell/corewms/tree/main)
 [![Nuget](https://img.shields.io/nuget/v/CoreWms)](https://www.nuget.org/packages/CoreWms/)
 
-A WMS implementation in .NET Core 6 using SkiaSharp as the rendering engine.
+A WMS implementation in [.NET 6](https://dotnet.microsoft.com/en-us/) using [SkiaSharp](https://github.com/mono/SkiaSharp) as the rendering engine.
 
 Supports PostgreSQL and FlatGeobuf as data sources and [SLD 1.0](https://www.ogc.org/standards/sld) as styling language.
 
