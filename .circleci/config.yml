@@ -7,7 +7,7 @@ jobs:
     steps:
       - run:
           name: Needed deps
-          command: sudo apt-get update && sudo apt-get install -y libfontconfig1
+          command: apt-get update && apt-get install -y libfontconfig1
       - checkout
       - restore_cache:
           keys:
