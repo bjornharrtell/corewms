@@ -5,6 +5,9 @@ jobs:
     docker:
       - image: mcr.microsoft.com/dotnet/sdk:6.0
     steps:
+      - run:
+          name: Needed deps
+          command: apt install -y libfontconfig1
       - checkout
       - restore_cache:
           keys:
