@@ -1,5 +1,6 @@
 # CoreWms
 
+[![CircleCI](https://circleci.com/gh/bjornharrtell/corewms/tree/main.svg?style=svg)](https://circleci.com/gh/bjornharrtell/corewms/tree/main)
 [![Nuget](https://img.shields.io/nuget/v/CoreWms)](https://www.nuget.org/packages/CoreWms/)
 
 A WMS implementation in .NET Core 6 using SkiaSharp as the rendering engine.
