@@ -8,13 +8,13 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-net-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
+            - v1-net-dependencies-{{ checksum "CoreWms/CoreWms.csproj" }}
             - v1-net-dependencies-
       - run: dotnet test
       - save_cache:
           paths:
             - ~/.nuget/packages
-          key: v1-net-dependencies-{{ checksum "src/net/FlatGeobuf/FlatGeobuf.csproj" }}
+          key: v1-net-dependencies-{{ checksum "CoreWms/CoreWms.csproj" }}
 
 workflows:
   main:
