@@ -1,5 +1,7 @@
 # CoreWms
 
+[![Nuget](https://img.shields.io/nuget/v/CoreWms)](https://www.nuget.org/packages/CoreWms/)
+
 A WMS implementation in .NET Core 6 using SkiaSharp as the rendering engine.
 
 Supports PostgreSQL and FlatGeobuf as data sources and SLD 1.0 as styling language.
