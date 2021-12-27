@@ -86,7 +86,7 @@ static class SldHelpers
         {
             var strokeColor = s.Stroke.CssParameter?.First(p => p.name == "stroke").Text ?? "#000000";
             var strokeWidth = s.Stroke.CssParameter?.First(p => p.name == "stroke-width").Text ?? "1";
-            byte alpha = (byte) (float.Parse(s.Stroke.CssParameter?.First(p => p.name == "stroke-opacity").Text ?? "1") * 255);
+            byte alpha = (byte) (float.Parse(s.Stroke.CssParameter?.FirstOrDefault(p => p.name == "stroke-opacity")?.Text ?? "1") * 255);
             stroke = new SKPaint
             {
                 Style = SKPaintStyle.Stroke,

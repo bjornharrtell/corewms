@@ -26,11 +26,4 @@
     <ProjectReference Include="../WebApp/WebApp.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ContentWithTargetPath Include="./Expected/**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>Expected/%(RecursiveDir)/%(Filename)%(Extension)</TargetPath>
-    </ContentWithTargetPath>
-  </ItemGroup>
-
 </Project>

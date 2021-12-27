@@ -45,7 +45,7 @@ public class Context : IContext
         }
         catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException)
         {
-            logger.LogWarning("Style for layer {name} not found falling back to default", name);
+            logger.LogWarning("Style for layer {name} not found", name);
             return Array.Empty<Rule>();
         }
     }
@@ -58,10 +58,10 @@ public class Context : IContext
 
         if (dataSource.Type == "FlatGeobuf")
             return serviceProvider.GetRequiredService<FlatGeobufSource>()
-                .Configure(dataSource, layer);
+                .Configure(this, dataSource, layer);
         else if (dataSource.Type == "PostgreSQL")
             return serviceProvider.GetRequiredService<PostgreSQLSource>()
-                .Configure(dataSource, layer);
+                .Configure(this, dataSource, layer);
         else
             throw new Exception($"Unknown datasource type {dataSource.Type}");
     }

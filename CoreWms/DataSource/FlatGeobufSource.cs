@@ -43,9 +43,9 @@ public class FlatGeobufSource : IDataSource
         logger.LogTrace("Fetched {i} features", i);
     }
 
-    public IDataSource Configure(Config.DataSource dataSource, Layer layer)
+    public IDataSource Configure(IContext context, Config.DataSource dataSource, Layer layer)
     {
-        filePath = Path.Join(dataSource.Path, layer.Name) + ".fgb";
+        filePath = Path.Join(context.Config.DataPath ?? "", dataSource.Path, layer.Name) + ".fgb";
         return this;
     }
 }

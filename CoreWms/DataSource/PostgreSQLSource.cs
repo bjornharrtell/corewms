@@ -158,7 +158,7 @@ public class PostgreSQLSource : IDataSource
         };
     }
 
-    public IDataSource Configure(Config.DataSource dataSource, Layer layer)
+    public IDataSource Configure(IContext context, Config.DataSource dataSource, Layer layer)
     {
         logger.LogTrace("Configuring {Name}", layer.Name);
         connectionString = dataSource.ConnectionString;
