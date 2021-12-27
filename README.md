@@ -5,7 +5,9 @@
 
 A WMS implementation in .NET Core 6 using SkiaSharp as the rendering engine.
 
-Supports PostgreSQL and FlatGeobuf as data sources and SLD 1.0 as styling language.
+Supports PostgreSQL and FlatGeobuf as data sources and [SLD 1.0](https://www.ogc.org/standards/sld) as styling language.
+
+Subproject folders [WebApp](WebApp) and [Function](Function) are intended to be starting points for hosting a CoreWms instance with ASP.NET Core and Azure Function respectively, but can essentially be used as is.
 
 Open source under the [BSD 2-Clause License](https://tldrlegal.com/license/bsd-2-clause-license-(freebsd)).
 
@@ -14,6 +16,7 @@ Open source under the [BSD 2-Clause License](https://tldrlegal.com/license/bsd-2
 * [ ] Schema validated capabilities document output
 * [ ] Complete non spatial filter support
 * [ ] Complete symbolizer support
+* [ ] Usage documentation
 
 ### Stretch goals
 
@@ -27,9 +30,11 @@ Open source under the [BSD 2-Clause License](https://tldrlegal.com/license/bsd-2
 * Reprojection
 * Raster sources
 
-## How to run
+## How to run / usage
 
 Should be runnable out of the box with `dotnet run --project WebApp`.
+
+See [WebApp/appsettings.json](WebApp/appsettings.json) for a configuration example. SLD files corresponding to layer name is expected to be found at `DataPath` (default is current path) in a subfolder named `sld`.
 
 ## Example requests
 
