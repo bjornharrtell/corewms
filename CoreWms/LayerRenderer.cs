@@ -4,7 +4,7 @@ using SkiaSharp;
 
 namespace CoreWms;
 
-public class LayerRenderer
+public sealed class LayerRenderer : IDisposable
 {
     readonly int height;
     readonly double ox;
@@ -32,6 +32,12 @@ public class LayerRenderer
         info = new SKImageInfo(width, height);
         bitmap = new SKBitmap(info);
         canvas = new SKCanvas(bitmap);
+    }
+
+    public void Dispose()
+    {
+        bitmap?.Dispose();
+        canvas?.Dispose();
     }
 
     public LayerRenderer Merge(LayerRenderer r)

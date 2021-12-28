@@ -35,6 +35,10 @@ public class GetMap : Request
     private readonly ILogger<GetMap> logger;
     private readonly IContext context;
 
+    private readonly SKPngEncoderOptions pngEncoderOptions = new() {
+        ZLibLevel = 3
+    };
+
     public GetMap(ILogger<GetMap> logger, IContext context)
     {
         this.logger = logger;
@@ -82,21 +86,31 @@ public class GetMap : Request
 
     public async Task StreamResponseAsync(GetMapParameters parameters, Stream stream)
     {
-        var renderers = parameters.Layers
-            .Select(l => ProcessLayer(parameters, l));
+        LayerRenderer[]? renderers = null;
+        try
+        {
+            var rendererTasks = parameters.Layers
+            .Select(async l => await ProcessLayer(parameters, l));
 
-        var stopwatch = Stopwatch.StartNew();
-        var renderer = await Task.WhenAll(renderers);
+            var stopwatch = Stopwatch.StartNew();
+            renderers = await Task.WhenAll(rendererTasks);
 
-        stopwatch = Stopwatch.StartNew();
-        // TODO: renderers could be run by concurrent thread pool?
-        SKData data;
-        if (renderers.Count() == 1)
-            data = renderer[0].Bitmap.Encode(SKEncodedImageFormat.Png, 100);
-        else
-            data = renderer.Aggregate((a, b) => a.Merge(b)).Bitmap.Encode(SKEncodedImageFormat.Png, 100);
-        await data.AsStream().CopyToAsync(stream);
-        logger.LogTrace("Encoded {Format} ({ElapsedMilliseconds} ms)", parameters.Format, stopwatch.ElapsedMilliseconds);
+            stopwatch = Stopwatch.StartNew();
+            // TODO: renderers could be run by concurrent thread pool?
+            SKData data;
+            if (renderers.Length == 1)
+                data = renderers[0].Bitmap.PeekPixels().Encode(pngEncoderOptions);
+            else
+                data = renderers.Aggregate((a, b) => a.Merge(b)).Bitmap.PeekPixels().Encode(pngEncoderOptions);
+            await data.AsStream().CopyToAsync(stream);
+            logger.LogTrace("Encoded {Format} ({ElapsedMilliseconds} ms)", parameters.Format, stopwatch.ElapsedMilliseconds);
+        }
+        finally
+        {
+            if (renderers != null)
+                foreach (var renderer in renderers)
+                    renderer.Dispose();
+        }
     }
 
     private static bool CheckResolution(GetMapParameters p, Rule r)
@@ -106,6 +120,13 @@ public class GetMap : Request
         if (r.MinResolution != null && p.Resolution <= r.MinResolution)
             return false;
         return true;
+    }
+
+    struct RenderContext
+    {
+        public Rule Rule;
+        public LayerRenderer Renderer;
+        public bool IsVisible;
     }
 
     async Task<LayerRenderer> ProcessLayer(GetMapParameters parameters, string layer)
@@ -122,25 +143,33 @@ public class GetMap : Request
             return new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox);
         }
 
-        var tuples = serverLayer.Rules
-            .Select(r => (
-                Rule: r,
-                Renderer: new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox),
-                IsVisible: CheckResolution(parameters, r)
-            )).ToArray();
+        RenderContext[]? renderContexts = null;
+        try {
+            renderContexts = serverLayer.Rules
+                .Select(r => new RenderContext {
+                    Rule = r,
+                    Renderer = new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox),
+                    IsVisible = CheckResolution(parameters, r)
+                }).ToArray();
 
-        var stopwatch = Stopwatch.StartNew();
-        // TODO: renderers could be run by concurrent thread pool?
-        await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, parameters.Tolerance))
-            foreach (var t in tuples)
-                if (t.IsVisible && (t.Rule.Filter?.Evaluate(f) ?? true))
-                    t.Renderer.Draw(f, t.Rule.Symbolizers);
-        logger.LogTrace("Fetched data and rendered layer {layer} ({ElapsedMilliseconds} ms)", layer, stopwatch.ElapsedMilliseconds);
+            var stopwatch = Stopwatch.StartNew();
+            // TODO: renderers could be run by concurrent thread pool?
+            await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, parameters.Tolerance))
+                foreach (var renderContext in renderContexts)
+                    if (renderContext.IsVisible && (renderContext.Rule.Filter?.Evaluate(f) ?? true))
+                        renderContext.Renderer.Draw(f, renderContext.Rule.Symbolizers);
+            logger.LogTrace("Fetched data and rendered layer {layer} ({ElapsedMilliseconds} ms)", layer, stopwatch.ElapsedMilliseconds);
 
-        var first = tuples.First().Renderer;
-        foreach (var t in tuples.Skip(1))
-            first.Merge(t.Renderer);
+            var first = renderContexts.First().Renderer;
+            foreach (var t in renderContexts.Skip(1))
+                first.Merge(t.Renderer);
 
-        return first;
+            return first;
+        }
+        finally {
+            if (renderContexts != null)
+                foreach (var renderContext in renderContexts.Skip(1))
+                    renderContext.Renderer.Dispose();
+        }
     }
 }
