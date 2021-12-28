@@ -121,40 +121,40 @@ public class PostgreSQLSource : IDataSource
         logger.LogTrace("SQL: {sql}", sql);
         using var reader = conn.BeginBinaryExport(sql);
         while (reader.StartRow() != -1)
-            yield return await ReadFeature(reader);
+            yield return ReadFeature(reader);
     }
 
-    private async Task<IFeature> ReadFeature(NpgsqlBinaryExporter reader)
+    private IFeature ReadFeature(NpgsqlBinaryExporter reader)
     {
-        var geometry = pgreader.Read(await reader.ReadAsync<byte[]>());
+        var geometry = pgreader.Read(reader.Read<byte[]>());
         if (extraColumnsSet.Count > 0)
-            return new Feature(geometry, await ReadAttributes(reader));
+            return new Feature(geometry, ReadAttributes(reader));
         else
             return new Feature(geometry, null);
     }
 
-    private async Task<AttributesTable> ReadAttributes(NpgsqlBinaryExporter reader)
+    private AttributesTable ReadAttributes(NpgsqlBinaryExporter reader)
     {
         var attributes = new AttributesTable();
         foreach (var column in extraColumnsSet)
             if (!reader.IsNull)
-                attributes.Add(column.Key, await ReadAttribute(reader, column.Value));
+                attributes.Add(column.Key, ReadAttribute(reader, column.Value));
         return attributes;
     }
 
-    private static async Task<object> ReadAttribute(NpgsqlBinaryExporter reader, NpgsqlDbType npgsqlDbType)
+    private static object ReadAttribute(NpgsqlBinaryExporter reader, NpgsqlDbType npgsqlDbType)
     {
         return npgsqlDbType switch
         {
-            NpgsqlDbType.Smallint => await reader.ReadAsync<short>(),
-            NpgsqlDbType.Integer => await reader.ReadAsync<int>(),
-            NpgsqlDbType.Bigint => await reader.ReadAsync<long>(),
-            NpgsqlDbType.Text => await reader.ReadAsync<string>(),
-            NpgsqlDbType.Varchar => await reader.ReadAsync<string>(),
-            NpgsqlDbType.Date => await reader.ReadAsync<DateTimeOffset>(),
-            NpgsqlDbType.Timestamp => await reader.ReadAsync<DateTimeOffset>(),
-            NpgsqlDbType.TimestampTz => await reader.ReadAsync<DateTimeOffset>(),
-            _ => throw new Exception("Unknown datatype {npgsqlDbType}"),
+            NpgsqlDbType.Smallint => reader.Read<short>(),
+            NpgsqlDbType.Integer => reader.Read<int>(),
+            NpgsqlDbType.Bigint => reader.Read<long>(),
+            NpgsqlDbType.Text => reader.Read<string>(),
+            NpgsqlDbType.Varchar => reader.Read<string>(),
+            NpgsqlDbType.Date => reader.Read<DateTimeOffset>(),
+            NpgsqlDbType.Timestamp => reader.Read<DateTimeOffset>(),
+            NpgsqlDbType.TimestampTz => reader.Read<DateTimeOffset>(),
+            _ => throw new Exception($"Unknown datatype {npgsqlDbType}"),
         };
     }
 
