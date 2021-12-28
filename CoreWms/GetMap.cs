@@ -166,7 +166,8 @@ public class GetMap : Request
 
             return first;
         }
-        finally {
+        finally
+        {
             if (renderContexts != null)
                 foreach (var renderContext in renderContexts.Skip(1))
                     renderContext.Renderer.Dispose();
