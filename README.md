@@ -3,9 +3,9 @@
 [![CircleCI](https://circleci.com/gh/bjornharrtell/corewms/tree/main.svg?style=svg)](https://circleci.com/gh/bjornharrtell/corewms/tree/main)
 [![Nuget](https://img.shields.io/nuget/v/CoreWms)](https://www.nuget.org/packages/CoreWms/)
 
-A WMS implementation in [.NET 6](https://dotnet.microsoft.com/en-us/) using [SkiaSharp](https://github.com/mono/SkiaSharp) as the rendering engine.
+A [WMS](https://www.ogc.org/standards/wms) implementation in [.NET 6](https://dotnet.microsoft.com/en-us/) using [SkiaSharp](https://github.com/mono/SkiaSharp) as the rendering engine.
 
-Supports PostgreSQL and FlatGeobuf as data sources and [SLD 1.0](https://www.ogc.org/standards/sld) as styling language.
+Supports [PostgreSQL/PostGIS](https://postgis.net) and [FlatGeobuf](https://flatgeobuf.org) as data sources and [SLD 1.0](https://www.ogc.org/standards/sld) as styling language.
 
 Subproject folders [WebApp](WebApp) and [Function](Function) are intended to be starting points for hosting a CoreWms instance with ASP.NET Core and Azure Function respectively, but can essentially be used as is.
 
@@ -16,12 +16,12 @@ Open source under the [BSD 2-Clause License](https://tldrlegal.com/license/bsd-2
 * [ ] Schema validated capabilities document output
 * [ ] Complete non spatial filter support
 * [ ] Complete symbolizer support
-* [ ] Usage documentation
+* [ ] More usage documentation
 
 ### Stretch goals
 
 * [ ] Dynamic styling support
-* [ ] Spatial filtering support
+* [ ] Spatial filtering support (other than bbox)
 * [ ] SLD 1.1 support
 
 ### Non goals
