@@ -7,7 +7,7 @@ A [WMS](https://www.ogc.org/standards/wms) implementation in [.NET 6](https://do
 
 Supports [PostgreSQL/PostGIS](https://postgis.net) and [FlatGeobuf](https://flatgeobuf.org) as data sources and [SLD 1.0](https://www.ogc.org/standards/sld) as styling language.
 
-Subproject folders [WebApp](WebApp) and [Function](Function) are intended to be starting points for hosting a CoreWms instance with ASP.NET Core and Azure Function respectively, but can essentially be used as is.
+Subproject folders [WebApp](WebApp) and [Function](Function) are intended to be starting points for hosting an instance with ASP.NET Core and Azure Function respectively, but can essentially be used as is.
 
 Open source under the [BSD 2-Clause License](https://tldrlegal.com/license/bsd-2-clause-license-(freebsd)).
 
