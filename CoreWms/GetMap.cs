@@ -85,9 +85,9 @@ public class GetMap : Request
         throw new Exception($"Format {format} is not supported");
     }
 
-    private static SKData Encode(LayerRenderer[] renderers)
+    private static SKData Encode(IEnumerable<LayerRenderer> renderers)
     {
-        if (renderers.Length == 1)
+        if (renderers.Count() == 1)
             return renderers.First().Bitmap.PeekPixels().Encode(pngEncoderOptions);
         else
             return renderers.Aggregate((a, b) => a.Merge(b)).Bitmap.PeekPixels().Encode(pngEncoderOptions);
@@ -95,11 +95,11 @@ public class GetMap : Request
 
     public async Task StreamResponseAsync(GetMapParameters parameters, Stream stream)
     {
-        using var rendererTasks = new DisposableEnumerable<Task<LayerRenderer>>(parameters.Layers
-            .Select(l => ProcessLayer(parameters, l)).ToArray());
+        // TODO: optional concurrency by splitting into tiles?
 
-        // TODO: renderers could be executed by concurrent thread pool?
-        var renderers = await Task.WhenAll(rendererTasks);
+        // TODO: make maxDegreeOfParallelism configurable
+        var renderers = await parameters.Layers
+            .SelectAsync(async l => await ProcessLayer(parameters, l), 4);
 
         var stopwatch = Stopwatch.StartNew();
         await Encode(renderers).AsStream().CopyToAsync(stream);
@@ -148,7 +148,7 @@ public class GetMap : Request
         var stopwatch = Stopwatch.StartNew();
 
         // fetch features and render in destination context
-        // TODO: renderers executed be run by concurrent thread pool?
+        // TODO: concurrency?
         await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, parameters.Tolerance))
             foreach (var renderContext in renderContexts)
                 if (renderContext.IsVisible && (renderContext.Rule.Filter?.Evaluate(f) ?? true))

@@ -105,16 +105,17 @@ public class PostgreSQLSource : IDataSource
     public async IAsyncEnumerable<IFeature> FetchAsync(Envelope e, double tolerance = 0)
     {
         var srid = GetEPSGCode();
-        var geomColumn = tolerance > 0 ? $"st_snaptogrid(st_force2d({geom}), {tolerance}, {tolerance}) geom" : $"st_force2d({geom}) geom";
+        var geomColumn = tolerance > 0 ? $"st_removerepeatedpoints(st_force2d({geom}), {tolerance}) geom" : $"st_force2d({geom}) geom";
         var columns = GenerateSelect(geomColumn);
         await using var conn = new NpgsqlConnection(connectionString);
         await conn.OpenAsync();
         var whereGeomFilter = $"st_intersects({geom}, st_makeenvelope({e.MinX}, {e.MinY}, {e.MaxX}, {e.MaxY}, {srid}))";
         var whereClauses = new List<string>() { whereGeomFilter };
-        if (typeof(IPolygonal).IsAssignableFrom(geometryType))
-            whereClauses.Add($"st_area({geom}) > {tolerance}");
-        else if (typeof(ILineal).IsAssignableFrom(geometryType))
-            whereClauses.Add($"st_length({geom}) > {tolerance}");
+        // TODO: would have to take symbolizer into consideration
+        //if (typeof(IPolygonal).IsAssignableFrom(geometryType))
+        //    whereClauses.Add($"st_area({geom}) > {tolerance/2}");
+        //else if (typeof(ILineal).IsAssignableFrom(geometryType))
+        //    whereClauses.Add($"st_length({geom}) > {tolerance/2}");
         var where = string.Join(" and ", whereClauses);
         var select = $"select {columns} from {schema}.{table} where {where}";
         var sql = $"copy ({select}) to stdout (format binary)";
@@ -126,6 +127,7 @@ public class PostgreSQLSource : IDataSource
 
     private IFeature ReadFeature(NpgsqlBinaryExporter reader)
     {
+        // TODO: consider using TWKB?
         var geometry = pgreader.Read(reader.Read<byte[]>());
         if (extraColumnsSet.Count > 0)
             return new Feature(geometry, ReadAttributes(reader));

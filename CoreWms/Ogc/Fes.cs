@@ -31,6 +31,17 @@ public abstract class PredicateOpsType
     public abstract string[] GetRequiredPropertyNames();
 }
 
+
+public abstract class UnaryOpsType : PredicateOpsType
+{
+    public PropertyName PropertyName;
+
+    public override string[] GetRequiredPropertyNames()
+    {
+        return new string[] { PropertyName.Text };
+    }
+}
+
 public abstract class ComparisonOpsType : PredicateOpsType
 {
     public PropertyName PropertyName;
@@ -53,6 +64,7 @@ public class PropertyIsEqualTo : ComparisonOpsType
             return Literal.Text == Convert.ToString(value);
     }
 }
+
 public class PropertyIsNotEqualTo : ComparisonOpsType
 {
     public override bool Evaluate(IFeature f)
@@ -65,10 +77,20 @@ public class PropertyIsNotEqualTo : ComparisonOpsType
     }
 }
 
+public class PropertyIsNull : UnaryOpsType
+{
+    public override bool Evaluate(IFeature f)
+    {
+        var value = f.Attributes.GetOptionalValue(PropertyName.Text);
+        return value == null;
+    }
+}
+
 public class FilterPredicates : PredicateOpsType
 {
     [XmlElement("PropertyIsEqualTo", Type = typeof(PropertyIsEqualTo))]
     [XmlElement("PropertyIsNotEqualTo", Type = typeof(PropertyIsNotEqualTo))]
+    [XmlElement("PropertyIsNull", Type = typeof(PropertyIsNull))]
     [XmlElement("And", Type = typeof(And))]
     [XmlElement("Or", Type = typeof(Or))]
     public PredicateOpsType[]? PredicateOps;
