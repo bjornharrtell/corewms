@@ -35,7 +35,7 @@ public class GetMap : Request
     private readonly ILogger<GetMap> logger;
     private readonly IContext context;
 
-    private readonly SKPngEncoderOptions pngEncoderOptions = new()
+    private static readonly SKPngEncoderOptions pngEncoderOptions = new()
     {
         ZLibLevel = 3
     };
@@ -85,25 +85,24 @@ public class GetMap : Request
         throw new Exception($"Format {format} is not supported");
     }
 
+    private static SKData Encode(LayerRenderer[] renderers)
+    {
+        if (renderers.Length == 1)
+            return renderers.First().Bitmap.PeekPixels().Encode(pngEncoderOptions);
+        else
+            return renderers.Aggregate((a, b) => a.Merge(b)).Bitmap.PeekPixels().Encode(pngEncoderOptions);
+    }
+
     public async Task StreamResponseAsync(GetMapParameters parameters, Stream stream)
     {
-        using var rendererTasks = new DisposableList<Task<LayerRenderer>>(parameters.Layers
-            .Select(async l => await ProcessLayer(parameters, l)));
+        using var rendererTasks = new DisposableEnumerable<Task<LayerRenderer>>(parameters.Layers
+            .Select(l => ProcessLayer(parameters, l)).ToArray());
 
         // TODO: renderers could be executed by concurrent thread pool?
         var renderers = await Task.WhenAll(rendererTasks);
 
         var stopwatch = Stopwatch.StartNew();
-
-        SKData Encode()
-        {
-            if (renderers.Length == 1)
-                return renderers[0].Bitmap.PeekPixels().Encode(pngEncoderOptions);
-            else
-                return renderers.Aggregate((a, b) => a.Merge(b)).Bitmap.PeekPixels().Encode(pngEncoderOptions);
-        }
-        await Encode().AsStream().CopyToAsync(stream);
-
+        await Encode(renderers).AsStream().CopyToAsync(stream);
         logger.LogTrace("Encoded {Format} ({ElapsedMilliseconds} ms)", parameters.Format, stopwatch.ElapsedMilliseconds);
     }
 
@@ -121,11 +120,7 @@ public class GetMap : Request
         public Rule Rule;
         public LayerRenderer Renderer;
         public bool IsVisible;
-
-        public void Dispose()
-        {
-            Renderer.Dispose();
-        }
+        public void Dispose() => Renderer.Dispose();
     }
 
     async Task<LayerRenderer> ProcessLayer(GetMapParameters parameters, string layer)
@@ -143,12 +138,12 @@ public class GetMap : Request
         }
 
         // create render contexts and request first to be left undisposed
-        using var renderContexts = new DisposableList<RenderContext>(serverLayer.Rules
+        using var renderContexts = new DisposableEnumerable<RenderContext>(serverLayer.Rules
             .Select(r => new RenderContext {
                 Rule = r,
                 Renderer = new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox),
                 IsVisible = CheckResolution(parameters, r)
-            }), true);
+            }).ToArray(), true);
 
         var stopwatch = Stopwatch.StartNew();
 
