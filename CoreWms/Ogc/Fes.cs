@@ -9,10 +9,29 @@ public readonly struct PropertyName
     public string Text { get; init; }
 }
 
-public readonly struct Literal
+public struct Literal
 {
+    string _text;
+    object _object;
+
     [XmlText]
-    public string Text { get; init; }
+    public string Text
+    {
+        get
+        {
+            return _text;
+        }
+        set
+        {
+            _text = value;
+            if (int.TryParse(value, out int intValue))
+                _object = intValue;
+            else
+                _object = value;
+        }
+    }
+
+    public object Object { get { return _object; }}
 }
 
 public abstract class LogicOpsType : FilterPredicates { }
@@ -58,10 +77,7 @@ public class PropertyIsEqualTo : ComparisonOpsType
     public override bool Evaluate(IFeature f)
     {
         var value = f.Attributes.GetOptionalValue(PropertyName.Text);
-        if (value == null)
-            return false;
-        else
-            return Literal.Text == Convert.ToString(value);
+        return value?.Equals(Literal.Object) ?? false;
     }
 }
 
@@ -70,10 +86,7 @@ public class PropertyIsNotEqualTo : ComparisonOpsType
     public override bool Evaluate(IFeature f)
     {
         var value = f.Attributes.GetOptionalValue(PropertyName.Text);
-        if (value == null)
-            return false;
-        else
-            return Literal.Text != Convert.ToString(value);
+        return !(value?.Equals(Literal.Object) ?? true);
     }
 }
 

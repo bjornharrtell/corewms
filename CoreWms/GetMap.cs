@@ -98,8 +98,8 @@ public class GetMap : Request
         // TODO: optional concurrency by splitting into tiles?
 
         // TODO: make maxDegreeOfParallelism configurable
-        var renderers = await parameters.Layers
-            .SelectAsync(async l => await ProcessLayer(parameters, l), 4);
+        var renderers = new DisposableEnumerable<LayerRenderer>((await parameters.Layers
+            .SelectAsync(async l => await ProcessLayer(parameters, l), 4)).ToArray());
 
         var stopwatch = Stopwatch.StartNew();
         await Encode(renderers).AsStream().CopyToAsync(stream);
