@@ -104,7 +104,7 @@ static class SldHelpers
 
     static Rule ConvertRule(Ogc.Se.Rule seRule)
     {
-        var symbolizers = seRule.Symbolizer?.Select(ConvertSymbolizer).ToArray();
+        var symbolizers = seRule.Symbolizer.Select(ConvertSymbolizer).ToArray();
         var filter = seRule.Filter;
         double? minResolution = null;
         double? maxResolution = null;
@@ -122,11 +122,16 @@ static class SldHelpers
         };
     }
 
-    static public Rule[]? ToCoreWmsRules(StyledLayerDescriptor sld)
+    static public Style[] ToCoreWmsStyles(StyledLayerDescriptor sld)
     {
-        var userStyle = sld.NamedLayer?.First()?.UserStyle?.First();
-        var featureTypeStyle = userStyle?.FeatureTypeStyle?.First();
-        var rules = featureTypeStyle?.Rule?.Select(ConvertRule);
-        return rules?.ToArray();
+        if (sld.NamedLayer.Length == 0)
+            return Array.Empty<Style>();
+        var userStyle = sld.NamedLayer.First().UserStyle.First();
+        var styles = userStyle.FeatureTypeStyle.Select(fts =>
+            new Style() {
+                Rules = fts.Rule.Select(ConvertRule).ToArray()
+            }
+        );
+        return styles.ToArray();
     }
 }

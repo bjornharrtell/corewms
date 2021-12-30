@@ -109,7 +109,7 @@ public class PostgreSQLSource : IDataSource
         var columns = GenerateSelect(geomColumn);
         await using var conn = new NpgsqlConnection(connectionString);
         await conn.OpenAsync();
-        var whereGeomFilter = $"st_intersects({geom}, st_makeenvelope({e.MinX}, {e.MinY}, {e.MaxX}, {e.MaxY}, {srid}))";
+        var whereGeomFilter = $"{geom} && st_makeenvelope({e.MinX}, {e.MinY}, {e.MaxX}, {e.MaxY}, {srid})";
         var whereClauses = new List<string>() { whereGeomFilter };
         // TODO: would have to take symbolizer into consideration
         //if (typeof(IPolygonal).IsAssignableFrom(geometryType))
@@ -168,10 +168,10 @@ public class PostgreSQLSource : IDataSource
         table = layer.Table ?? layer.Name;
         if (layer.Extent != null)
             envelope = new Envelope(layer.Extent[0], layer.Extent[2], layer.Extent[1], layer.Extent[3]);
-        if (layer.Rules != null)
-            extraColumns = new HashSet<string>(layer.Rules.SelectMany(r => r.Filter?.GetRequiredPropertyNames() ?? Array.Empty<string>())).ToArray();
-        else
-            extraColumns = Array.Empty<string>();
+        extraColumns = new HashSet<string>(layer.Styles
+                .SelectMany(s => s.Rules)
+                .SelectMany(r => r.Filter?.GetRequiredPropertyNames() ?? Array.Empty<string>()))
+            .ToArray();
 
         logger.LogTrace("Getting column metadata for {Name}", layer.Name);
         geom = GetGeometryName();

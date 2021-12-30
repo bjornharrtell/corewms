@@ -58,18 +58,18 @@ public class Symbolizer
     public Fill? Fill;
 }
 
-public class Rule
+public readonly struct Rule
 {
     [XmlElement("LineSymbolizer", Type = typeof(LineSymbolizer))]
     [XmlElement("PolygonSymbolizer", Type = typeof(PolygonSymbolizer))]
-    public Symbolizer[]? Symbolizer;
-    public Filter? Filter;
-    public string? MinScaleDenominator;
-    public string? MaxScaleDenominator;
+    public readonly Symbolizer[] Symbolizer { get; init; }
+    public readonly Filter? Filter { get; init; }
+    public readonly string? MinScaleDenominator { get; init; }
+    public readonly string? MaxScaleDenominator { get; init; }
 }
 
-public class FeatureTypeStyle
+public readonly struct FeatureTypeStyle
 {
     [XmlElement]
-    public Rule[]? Rule;
+    public readonly Rule[] Rule { get; init; }
 }

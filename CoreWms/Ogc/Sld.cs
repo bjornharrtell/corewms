@@ -3,21 +3,21 @@ using CoreWms.Ogc.Se;
 
 namespace CoreWms.Ogc.Sld;
 
-public class UserStyle
+public readonly struct UserStyle
 {
     [XmlElement]
-    public FeatureTypeStyle[]? FeatureTypeStyle;
+    public readonly FeatureTypeStyle[] FeatureTypeStyle { get; init; }
 }
 
-public class NamedLayer
+public readonly struct NamedLayer
 {
     [XmlElement]
-    public UserStyle[]? UserStyle;
+    public readonly UserStyle[] UserStyle { get; init; }
 }
 
 [XmlRoot(Namespace = "http://www.opengis.net/sld")]
-public class StyledLayerDescriptor
+public readonly struct StyledLayerDescriptor
 {
     [XmlElement]
-    public NamedLayer[]? NamedLayer;
+    public readonly NamedLayer[] NamedLayer { get; init; }
 }

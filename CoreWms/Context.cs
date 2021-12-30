@@ -33,20 +33,20 @@ public class Context : IContext
             .ToDictionary(l => l.Name);
     }
 
-    Rule[]? CreateRules(string name)
+    Style[] CreateStyles(string name)
     {
         var filePath = Path.Join(config.DataPath ?? "", "sld", name) + ".sld";
         try
         {
             var stream = new FileStream(filePath, FileMode.Open);
             var sld = SldHelpers.FromStream(stream);
-            var rules = SldHelpers.ToCoreWmsRules(sld);
-            return rules;
+            var styles = SldHelpers.ToCoreWmsStyles(sld);
+            return styles;
         }
         catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException)
         {
             logger.LogWarning("Style for layer {name} not found", name);
-            return Array.Empty<Rule>();
+            return Array.Empty<Style>();
         }
     }
 
@@ -88,18 +88,15 @@ public class Context : IContext
             Title = configLayer.Title,
             Table = configLayer.Table,
             Extent = configLayer.Extent,
-            Rules = CreateRules(name),
+            Styles = CreateStyles(name),
             GeometryType = geometryType
         };
         layer.DataSource = CreateDataSource(configLayer, layer);
-        if (layer.Rules != null)
-        {
-            var maxResolution = layer.Rules
-                .Where(r => r.MaxResolution != null)
-                .Select(r => r.MaxResolution)
-                .Max();
-            layer.MaxResolution = maxResolution;
-        }
+        var maxResolution = layer.Styles.SelectMany(s => s.Rules)
+            .Where(r => r.MaxResolution != null)
+            .Select(r => r.MaxResolution)
+            .Max();
+        layer.MaxResolution = maxResolution;
         return layer;
     }
 }

@@ -10,10 +10,15 @@ public readonly struct Symbolizer
     public SKPaint? Stroke { get; init; }
 }
 
+public readonly struct Style
+{
+    public Rule[] Rules { get; init; }
+}
+
 public readonly struct Rule
 {
     public Filter? Filter { get; init; }
-    public Symbolizer[]? Symbolizers { get; init; }
+    public Symbolizer[] Symbolizers { get; init; }
     public double? MinResolution { get; init; }
     public double? MaxResolution { get; init; }
 }
@@ -26,7 +31,7 @@ public struct Layer
     public string Table { get; init; }
     public double[] Extent { get; init; }
     public Type GeometryType { get; init; }
-    public Rule[]? Rules { get; init; }
+    public Style[] Styles { get; init; }
     public IDataSource DataSource { get; set; }
     public double? MaxResolution { get; set; }
 }

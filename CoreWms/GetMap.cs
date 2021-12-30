@@ -106,7 +106,7 @@ public class GetMap : Request
         logger.LogTrace("Encoded {Format} ({ElapsedMilliseconds} ms)", parameters.Format, stopwatch.ElapsedMilliseconds);
     }
 
-    private static bool CheckResolution(GetMapParameters p, Rule r)
+    private static bool IsVisible(GetMapParameters p, Rule r)
     {
         if (r.MaxResolution != null && p.Resolution > r.MaxResolution)
             return false;
@@ -117,9 +117,8 @@ public class GetMap : Request
 
     struct RenderContext : IDisposable
     {
-        public Rule Rule;
+        public Style Style;
         public LayerRenderer Renderer;
-        public bool IsVisible;
         public void Dispose() => Renderer.Dispose();
     }
 
@@ -128,9 +127,6 @@ public class GetMap : Request
         if (!context.Layers.TryGetValue(layer, out Layer serverLayer))
             throw new LayerNotDefinedException($"Layer {layer} is not defined");
 
-        if (serverLayer.Rules == null || serverLayer.Rules.Length == 0)
-            throw new Exception("Layer has no rules");
-
         if (parameters.Resolution > serverLayer.MaxResolution)
         {
             logger.LogTrace("Layer max resolution {} is lower than requested render resolution {}", serverLayer.MaxResolution, parameters.Resolution);
@@ -138,11 +134,10 @@ public class GetMap : Request
         }
 
         // create render contexts and request first to be left undisposed
-        using var renderContexts = new DisposableEnumerable<RenderContext>(serverLayer.Rules
-            .Select(r => new RenderContext {
-                Rule = r,
-                Renderer = new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox),
-                IsVisible = CheckResolution(parameters, r)
+        using var renderContexts = new DisposableEnumerable<RenderContext>(serverLayer.Styles
+            .Select(s => new RenderContext {
+                Style = s,
+                Renderer = new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox)
             }).ToArray(), true);
 
         var stopwatch = Stopwatch.StartNew();
@@ -151,8 +146,9 @@ public class GetMap : Request
         // TODO: concurrency?
         await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, parameters.Tolerance))
             foreach (var renderContext in renderContexts)
-                if (renderContext.IsVisible && (renderContext.Rule.Filter?.Evaluate(f) ?? true))
-                    renderContext.Renderer.Draw(f, renderContext.Rule.Symbolizers);
+                foreach (var rule in renderContext.Style.Rules)
+                    if (IsVisible(parameters, rule) && (rule.Filter?.Evaluate(f) ?? true))
+                        renderContext.Renderer.Draw(f, rule.Symbolizers);
 
         // merge all contexts into the first
         var first = renderContexts.First().Renderer;
