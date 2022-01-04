@@ -88,4 +88,20 @@ public class GridCellTests
 
         Assert.Equal(16, parts.Length);
     }
+
+    [Fact]
+    public void NonIntegralTest()
+    {
+        var p = new GridCell() {
+            Bbox = new Envelope(0, 100, 0, 100),
+            Width = 101,
+            Height = 101
+        };
+
+        var parts = p.Split(1);
+
+        Assert.Equal(2, parts.Length);
+        Assert.Equal(50, parts[0].Height);
+        Assert.Equal(51, parts[1].Height);
+    }
 }

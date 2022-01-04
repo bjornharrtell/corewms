@@ -101,7 +101,7 @@ public class GetMap : Request
     public async Task StreamResponseAsync(GetMapParameters parameters, Stream stream)
     {
         // TODO: optional concurrency by splitting into tiles?
-        /*var gridCell = new GridCell() {
+        var gridCell = new GridCell() {
             Bbox = parameters.Bbox,
             Width = parameters.Width,
             Height = parameters.Height
@@ -115,7 +115,7 @@ public class GetMap : Request
                     Bbox = c.Bbox
                 };
                 var renderers = new DisposableEnumerable<LayerRenderer>((await parameters.Layers
-                    .SelectAsync(async l => await ProcessLayer(p, l), 4)).ToArray());
+                    .SelectAsync(l => ProcessLayer(p, l), 4)).ToArray());
                 var cellRenderer = Merge(renderers);
                 cellRenderer.SetOffset(c.X, c.Y);
                 return cellRenderer;
@@ -123,14 +123,14 @@ public class GetMap : Request
 
         var layerRenderer = new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox);
         foreach (var cellRenderer in cellRenderers)
-            layerRenderer.Merge(cellRenderer);*/
+            layerRenderer.MergeWithOffset(cellRenderer);
 
         // TODO: make maxDegreeOfParallelism configurable
-        using var renderers = new DisposableEnumerable<LayerRenderer>((await parameters.Layers
-            .SelectAsync(async l => await ProcessLayer(parameters, l), 4)).ToArray());
+        //using var renderers = new DisposableEnumerable<LayerRenderer>((await parameters.Layers
+        //    .SelectAsync(async l => await ProcessLayer(parameters, l), 4)).ToArray());
 
         var stopwatch = Stopwatch.StartNew();
-        await Encode(Merge(renderers)).AsStream().CopyToAsync(stream);
+        await Encode(layerRenderer).AsStream().CopyToAsync(stream);
         logger.LogTrace("Encoded {Format} ({ElapsedMilliseconds} ms)", parameters.Format, stopwatch.ElapsedMilliseconds);
     }
 
@@ -183,7 +183,7 @@ public class GetMap : Request
         foreach (var t in renderContexts.Skip(1))
             first.Merge(t.Renderer);
 
-        logger.LogTrace("Fetched data and rendered layer {layer} ({ElapsedMilliseconds} ms)", layer, stopwatch.ElapsedMilliseconds);
+        logger.LogTrace("Fetched data and rendered layer {layer} ({ElapsedMilliseconds} ms) (Thread: {ManagedThreadId})", layer, stopwatch.ElapsedMilliseconds, Environment.CurrentManagedThreadId);
 
         return first;
     }

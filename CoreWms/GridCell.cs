@@ -35,37 +35,43 @@ public struct GridCell
     {
         if (Width > Height)
         {
+            int wf = (int) Math.Floor(Width/2d);
+            int wc = (int) Math.Ceiling(Width/2d);
+            double mpp = Bbox.Width / Width;
             var left = new GridCell() {
                 X = X,
                 Y = Y,
-                Width = Width / 2,
+                Width = wf,
                 Height = Height,
-                Bbox = new Envelope(Bbox.MinX, Bbox.MinX + Bbox.Width / 2, Bbox.MinY, Bbox.MaxY)
+                Bbox = new Envelope(Bbox.MinX, Bbox.MinX + (wf*mpp), Bbox.MinY, Bbox.MaxY)
             };
             var right = new GridCell() {
-                X = X + Width / 2,
+                X = X + wf,
                 Y = Y,
-                Width = Width / 2,
+                Width = wc,
                 Height = Height,
-                Bbox = new Envelope(Bbox.MinX + Bbox.Width / 2, Bbox.MaxX, Bbox.MinY, Bbox.MaxY)
+                Bbox = new Envelope(Bbox.MinX + (wf * mpp), Bbox.MaxX, Bbox.MinY, Bbox.MaxY)
             };
             return new GridCell[] { left, right };
         }
         else
         {
+            int hf = (int) Math.Floor(Height/2d);
+            int hc = (int) Math.Ceiling(Height/2d);
+            double mpp = Bbox.Height / Height;
             var up = new GridCell() {
                 X = X,
                 Y = Y,
                 Width = Width,
-                Height = Height / 2,
-                Bbox = new Envelope(Bbox.MinX, Bbox.MaxX, Bbox.MinY, Bbox.MinY + Bbox.Height/2)
+                Height = hf,
+                Bbox = new Envelope(Bbox.MinX, Bbox.MaxX, Bbox.MinY, Bbox.MinY + (hf * mpp))
             };
             var down = new GridCell() {
                 X = X,
-                Y = Y + Height / 2,
+                Y = Y + hf,
                 Width = Width,
-                Height = Height / 2,
-                Bbox = new Envelope(Bbox.MinX, Bbox.MaxX, Bbox.MinY + Bbox.Height/2, Bbox.MaxY)
+                Height = hc,
+                Bbox = new Envelope(Bbox.MinX, Bbox.MaxX, Bbox.MinY + (hf * mpp), Bbox.MaxY)
             };
             return new GridCell[] { up, down };
         }
