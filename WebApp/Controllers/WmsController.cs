@@ -19,7 +19,7 @@ public class WmsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task Get(string service, string? version, string request, string? layers, string? styles, string? crs, string? bbox, int? width, int? height, string? format, bool? transparent)
+    public async Task Get(string service, string? version, string request, string? layers, string? styles, string? crs, string? bbox, int? width, int? height, string? format, bool? transparent, CancellationToken cancellationToken)
     {
         logger.LogTrace("Recieved GET request");
         if (request == "GetCapabilities")
@@ -27,7 +27,7 @@ public class WmsController : ControllerBase
             Response.StatusCode = 200;
             Response.Headers.Add(HeaderNames.ContentType, "text/xml");
             await getCapabilities.StreamResponseAsync(Response.Body);
-            await Response.Body.FlushAsync();
+            await Response.Body.FlushAsync(cancellationToken);
         }
         else if (request == "GetMap")
         {
@@ -45,8 +45,8 @@ public class WmsController : ControllerBase
             Response.StatusCode = 200;
             Response.Headers.Add(HeaderNames.ContentType, "image/png");
             var parameters = getMap.ParseQueryStringParams(service, version, request, layers, styles, crs, bbox, width.Value, height.Value, format, transparent.GetValueOrDefault());
-            await getMap.StreamResponseAsync(parameters, Response.Body);
-            await Response.Body.FlushAsync();
+            await getMap.StreamResponseAsync(parameters, Response.Body, cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
         }
         else
         {

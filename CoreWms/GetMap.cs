@@ -98,7 +98,7 @@ public class GetMap : Request
         return l.Bitmap.PeekPixels().Encode(pngEncoderOptions);
     }
 
-    public async Task StreamResponseAsync(GetMapParameters parameters, Stream stream)
+    public async Task StreamResponseAsync(GetMapParameters parameters, Stream stream, CancellationToken cancellationToken)
     {
         // TODO: optional concurrency by splitting into tiles?
         var gridCell = new GridCell() {
@@ -115,7 +115,7 @@ public class GetMap : Request
                     Bbox = c.Bbox
                 };
                 var renderers = new DisposableEnumerable<LayerRenderer>((await parameters.Layers
-                    .SelectAsync(l => ProcessLayer(p, l), 4)).ToArray());
+                    .SelectAsync(l => ProcessLayer(p, l, cancellationToken), 4)).ToArray());
                 var cellRenderer = Merge(renderers);
                 cellRenderer.SetOffset(c.X, c.Y);
                 return cellRenderer;
@@ -130,7 +130,7 @@ public class GetMap : Request
         //    .SelectAsync(async l => await ProcessLayer(parameters, l), 4)).ToArray());
 
         var stopwatch = Stopwatch.StartNew();
-        await Encode(layerRenderer).AsStream().CopyToAsync(stream);
+        await Encode(layerRenderer).AsStream().CopyToAsync(stream, cancellationToken);
         logger.LogTrace("Encoded {Format} ({ElapsedMilliseconds} ms)", parameters.Format, stopwatch.ElapsedMilliseconds);
     }
 
@@ -150,7 +150,7 @@ public class GetMap : Request
         public void Dispose() => Renderer.Dispose();
     }
 
-    async Task<LayerRenderer> ProcessLayer(GetMapParameters parameters, string layer)
+    async Task<LayerRenderer> ProcessLayer(GetMapParameters parameters, string layer, CancellationToken cancellationToken)
     {
         if (!context.Layers.TryGetValue(layer, out Layer serverLayer))
             throw new LayerNotDefinedException($"Layer {layer} is not defined");
@@ -173,10 +173,13 @@ public class GetMap : Request
         // fetch features and render in destination context
         // TODO: concurrency?
         await foreach (var f in serverLayer.DataSource.FetchAsync(parameters.Bbox, parameters.Tolerance))
-            foreach (var renderContext in renderContexts)
-                foreach (var rule in renderContext.Style.Rules)
-                    if (IsVisible(parameters, rule) && (rule.Filter?.Evaluate(f) ?? true))
-                        renderContext.Renderer.Draw(f, rule.Symbolizers);
+            if (cancellationToken.IsCancellationRequested)
+                break;
+            else
+                foreach (var renderContext in renderContexts)
+                    foreach (var rule in renderContext.Style.Rules)
+                        if (IsVisible(parameters, rule) && (rule.Filter?.Evaluate(f) ?? true))
+                            renderContext.Renderer.Draw(f, rule.Symbolizers);
 
         // merge all contexts into the first
         var first = renderContexts.First().Renderer;

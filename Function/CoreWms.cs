@@ -8,6 +8,7 @@ using System.Linq;
 using System.Xml.Serialization;
 using CoreWms.Ogc.Wms;
 using System.IO;
+using System.Threading;
 
 namespace CoreWms;
 
@@ -25,7 +26,7 @@ namespace CoreWms;
         [FunctionName("CoreWms")]
         public async Task Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "wms")] HttpRequest req,
-            ILogger logger)
+            ILogger logger, CancellationToken cancellationToken)
         {
             logger.LogTrace("Recieved GET request");
             var response = req.HttpContext.Response;
@@ -48,7 +49,7 @@ namespace CoreWms;
                     response.StatusCode = 200;
                     response.ContentType = "text/xml";
                     await getCapabilities.StreamResponseAsync(response.Body);
-                    await response.Body.FlushAsync();
+                    await response.Body.FlushAsync(cancellationToken);
                 }
                 else if (request == "GetMap")
                 {
@@ -70,8 +71,8 @@ namespace CoreWms;
                     response.StatusCode = 200;
                     response.ContentType = "image/png";
                     var parameters = getMap.ParseQueryStringParams(service, version, request, layers, styles, crs, bbox, intWidth, intHeight, format, boolTransparent);
-                    await getMap.StreamResponseAsync(parameters, response.Body);
-                    await response.Body.FlushAsync();
+                    await getMap.StreamResponseAsync(parameters, response.Body, cancellationToken);
+                    await response.Body.FlushAsync(cancellationToken);
                 }
                 else
                 {
@@ -93,8 +94,8 @@ namespace CoreWms;
                 memoryStream.Seek(0, SeekOrigin.Begin);
                 response.StatusCode = 200;
                 response.ContentType = "text/xml";
-                await memoryStream.CopyToAsync(response.Body);
-                await memoryStream.FlushAsync();
+                await memoryStream.CopyToAsync(response.Body, cancellationToken);
+                await memoryStream.FlushAsync(cancellationToken);
                 await memoryStream.DisposeAsync();
             }
         }
