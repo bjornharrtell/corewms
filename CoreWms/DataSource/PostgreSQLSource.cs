@@ -168,10 +168,11 @@ public class PostgreSQLSource : IDataSource
         table = layer.Table ?? layer.Name;
         if (layer.Extent != null)
             envelope = new Envelope(layer.Extent[0], layer.Extent[2], layer.Extent[1], layer.Extent[3]);
-        extraColumns = new HashSet<string>(layer.Styles
+        extraColumns = new HashSet<string>(
+            layer.Styles
                 .SelectMany(s => s.Rules)
-                .SelectMany(r => r.Filter?.GetRequiredPropertyNames() ?? Array.Empty<string>()))
-            .ToArray();
+                .SelectMany(r => r.Filter?.GetRequiredPropertyNames() ?? Array.Empty<string>())
+            ).ToArray();
 
         logger.LogTrace("Getting column metadata for {Name}", layer.Name);
         geom = GetGeometryName();

@@ -12,6 +12,9 @@ public sealed class LayerRenderer : IDisposable
     readonly double rx;
     readonly double ry;
 
+    int pox;
+    int poy;
+
     readonly SKImageInfo info;
     readonly SKBitmap bitmap;
     readonly SKCanvas canvas;
@@ -21,17 +24,25 @@ public sealed class LayerRenderer : IDisposable
     public double Resolution => rx;
     public double Tolerance => 0.5f * rx;
 
-    public LayerRenderer(int width, int height, Envelope e)
+    public LayerRenderer(int width, int height, Envelope e, int x = 0, int y = 0)
     {
         this.height = height;
         ox = e.MinX;
         oy = e.MinY;
         rx = (e.MaxX - e.MinX) / width;
         ry = (e.MaxY - e.MinY) / height;
+        pox = x;
+        poy = y;
 
         info = new SKImageInfo(width, height);
         bitmap = new SKBitmap(info);
         canvas = new SKCanvas(bitmap);
+    }
+
+    public void SetOffset(int x = 0, int y = 0)
+    {
+        pox = x;
+        poy = y;
     }
 
     public void Dispose()
@@ -43,6 +54,12 @@ public sealed class LayerRenderer : IDisposable
     public LayerRenderer Merge(LayerRenderer r)
     {
         canvas.DrawBitmap(r.bitmap, 0f, 0f);
+        return this;
+    }
+
+    public LayerRenderer MergeWithOffset(LayerRenderer r)
+    {
+        canvas.DrawBitmap(r.bitmap, r.pox, height - r.poy - r.height);
         return this;
     }
 

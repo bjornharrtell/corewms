@@ -85,24 +85,52 @@ public class GetMap : Request
         throw new Exception($"Format {format} is not supported");
     }
 
-    private static SKData Encode(IEnumerable<LayerRenderer> renderers)
+    private static LayerRenderer Merge(IEnumerable<LayerRenderer> renderers)
     {
         if (renderers.Count() == 1)
-            return renderers.First().Bitmap.PeekPixels().Encode(pngEncoderOptions);
+            return renderers.First();
         else
-            return renderers.Aggregate((a, b) => a.Merge(b)).Bitmap.PeekPixels().Encode(pngEncoderOptions);
+            return renderers.Aggregate((a, b) => a.Merge(b));
+    }
+
+    private static SKData Encode(LayerRenderer l)
+    {
+        return l.Bitmap.PeekPixels().Encode(pngEncoderOptions);
     }
 
     public async Task StreamResponseAsync(GetMapParameters parameters, Stream stream)
     {
         // TODO: optional concurrency by splitting into tiles?
+        /*var gridCell = new GridCell() {
+            Bbox = parameters.Bbox,
+            Width = parameters.Width,
+            Height = parameters.Height
+        };
+        var cells = gridCell.Split(3);
+        using var cellRenderers = new DisposableEnumerable<LayerRenderer>((await cells
+            .SelectAsync(async c => {
+                var p = new GetMapParameters() {
+                    Height = c.Height,
+                    Width = c.Width,
+                    Bbox = c.Bbox
+                };
+                var renderers = new DisposableEnumerable<LayerRenderer>((await parameters.Layers
+                    .SelectAsync(async l => await ProcessLayer(p, l), 4)).ToArray());
+                var cellRenderer = Merge(renderers);
+                cellRenderer.SetOffset(c.X, c.Y);
+                return cellRenderer;
+            }, 4)).ToArray());
+
+        var layerRenderer = new LayerRenderer(parameters.Width, parameters.Height, parameters.Bbox);
+        foreach (var cellRenderer in cellRenderers)
+            layerRenderer.Merge(cellRenderer);*/
 
         // TODO: make maxDegreeOfParallelism configurable
-        var renderers = new DisposableEnumerable<LayerRenderer>((await parameters.Layers
+        using var renderers = new DisposableEnumerable<LayerRenderer>((await parameters.Layers
             .SelectAsync(async l => await ProcessLayer(parameters, l), 4)).ToArray());
 
         var stopwatch = Stopwatch.StartNew();
-        await Encode(renderers).AsStream().CopyToAsync(stream);
+        await Encode(Merge(renderers)).AsStream().CopyToAsync(stream);
         logger.LogTrace("Encoded {Format} ({ElapsedMilliseconds} ms)", parameters.Format, stopwatch.ElapsedMilliseconds);
     }
 

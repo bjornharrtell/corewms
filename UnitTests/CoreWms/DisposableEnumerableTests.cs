@@ -1,6 +1,3 @@
-using System.Xml.Serialization;
-using CoreWms.Ogc.Fes;
-using NetTopologySuite.Features;
 using Xunit;
 
 namespace CoreWms.UnitTests;
