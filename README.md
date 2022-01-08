@@ -11,6 +11,10 @@ Subproject folders [WebApp](WebApp) and [Function](Function) are intended to be 
 
 Open source under the [BSD 2-Clause License](https://tldrlegal.com/license/bsd-2-clause-license-(freebsd)).
 
+## Performance
+
+Early results indicate that CoreWms can produce a layered style 500x500 pixel PNG from 100 000 road segments from OpenStreetMap in 50% less time than GeoServer.
+
 ## TODO
 
 * [ ] Schema validated capabilities document output
