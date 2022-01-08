@@ -13,7 +13,7 @@ Open source under the [BSD 2-Clause License](https://tldrlegal.com/license/bsd-2
 
 ## Performance
 
-Early results indicate that CoreWms can produce a layered style 500x500 pixel PNG from 100 000 road segments from OpenStreetMap in 50% less time than GeoServer.
+Early results indicate that CoreWms can produce a layered style 500x500 pixel PNG from 100 000 road segments from OpenStreetMap in approximately half the amount of time compared to GeoServer.
 
 ## TODO
 
