@@ -13,7 +13,8 @@ jobs:
           keys:
             - v1-net6-dependencies-{{ checksum "CoreWms/CoreWms.csproj" }}
             - v1-net6-dependencies-
-      - run: dotnet build -f net6.0
+      - run: dotnet restore -p:TargetFramework=net6.0
+      - run: dotnet build -f net6.0 --no-restore
       - run: dotnet test -f net6.0 --no-build
       - save_cache:
           paths:
@@ -33,7 +34,8 @@ jobs:
           keys:
             - v1-net8-dependencies-{{ checksum "CoreWms/CoreWms.csproj" }}
             - v1-net8-dependencies-
-      - run: dotnet build -f net8.0
+      - run: dotnet restore -p:TargetFramework=net8.0
+      - run: dotnet build -f net8.0 --no-restore
       - run: dotnet test -f net8.0 --no-build
       - save_cache:
           paths:
