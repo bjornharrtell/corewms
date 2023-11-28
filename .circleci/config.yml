@@ -1,7 +1,26 @@
 version: 2.1
 
 jobs:
-  test:
+  test-net6:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:6.0
+    steps:
+      - run:
+          name: Needed deps
+          command: apt-get update && apt-get install -y libfontconfig1
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-net6-dependencies-{{ checksum "CoreWms/CoreWms.csproj" }}
+            - v1-net6-dependencies-
+      - run: dotnet test -f net6.0
+      - save_cache:
+          paths:
+            - ~/.nuget/packages
+          key: v1-net6-dependencies-{{ checksum "CoreWms/CoreWms.csproj" }}
+
+
+  test-net8:
     docker:
       - image: mcr.microsoft.com/dotnet/sdk:8.0
     steps:
@@ -11,15 +30,16 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-net-dependencies-{{ checksum "CoreWms/CoreWms.csproj" }}
-            - v1-net-dependencies-
-      - run: dotnet test
+            - v1-net8-dependencies-{{ checksum "CoreWms/CoreWms.csproj" }}
+            - v1-net8-dependencies-
+      - run: dotnet test -f net8.0
       - save_cache:
           paths:
             - ~/.nuget/packages
-          key: v1-net-dependencies-{{ checksum "CoreWms/CoreWms.csproj" }}
+          key: v1-net8-dependencies-{{ checksum "CoreWms/CoreWms.csproj" }}
 
 workflows:
   main:
     jobs:
-      - test
+      - test-net6
+      - test-net8
