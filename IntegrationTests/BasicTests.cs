@@ -25,6 +25,6 @@ public class BasicTests : IClassFixture<CustomWebApplicationFactory>
         response.EnsureSuccessStatusCode();
         var actual = await Image.LoadAsync<Rgba32>(await response.Content.ReadAsStreamAsync());
         var expected = await Image.LoadAsync<Rgba32>(path + "/../../../Expected/countries.png");
-        Assert.True(ImageSharpCompare.ImageAreEqual(actual, expected));
+        Assert.True(ImageSharpCompare.ImagesAreEqual(actual, expected));
     }
 }
